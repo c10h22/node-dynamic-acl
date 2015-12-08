@@ -1,0 +1,11 @@
+{
+	"name": "assert-acl",
+	"version": "1.0.0",
+	"description": "ACL for Sequelize",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Adnene KHALFA <adnene.khalfa@gmail.com>",
+	"license": "ISC"
+}
