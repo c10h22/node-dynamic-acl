@@ -1,0 +1,30 @@
+{
+	"node": true,
+	"esnext": true,
+	"bitwise": true,
+	"camelcase": false,
+	"curly": true,
+	"expr": true,
+	"eqeqeq": true,
+	"immed": true,
+	"indent": 2,
+	"latedef": "nofunc",
+	"newcap": false,
+	"noarg": true,
+	"quotmark": "single",
+	"undef": true,
+	"unused": true,
+	"strict": false,
+	"trailing": true,
+	"smarttabs": true,
+	"white": false,
+	"globals": {
+		"it": true,
+		"should": true,
+		"describe": true,
+		"before": true,
+		"beforeEach": true,
+		"after": true,
+		"afterEach": true
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"port": 3000,
+	"database": {
+		"host": "127.0.0.1",
+		"port": 3306,
+		"schema": "schema_v3",
+		"username": "root",
+		"password": null
+	}
+}
