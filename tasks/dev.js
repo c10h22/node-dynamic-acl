@@ -44,7 +44,7 @@ gulp.task('babel:test', ['babel:src', 'clean:test'], () =>
  * $ gulp babel:src
  * description: Compile es6 files to es5 and put them in dist directory
  */
-gulp.task('babel:src', ['clean:dist', 'config'], () =>
+gulp.task('babel:src', ['clean:dist'], () =>
 	gulp.src(paths.js.src)
 		.pipe(sourcemaps.init())
 		.pipe(babel())
@@ -89,13 +89,13 @@ gulp.task('clean:test', () => del(paths.test.dist));
  * $ gulp clean:dist
  * description: cleans dist directory
  * */
-gulp.task('clean:dist', ['clean:config'], () => del(paths.js.dist));
+gulp.task('clean:dist', [], () => del(paths.js.dist));
 
 /**
  * $ gulp clean
  * description: Cleans all compiled files
  */
-gulp.task('clean', ['clean:config', 'clean:dist', 'clean:test']);
+gulp.task('clean', ['', 'clean:dist', 'clean:test']);
 
 /**
  *$ gulp mocha
@@ -114,7 +114,11 @@ gulp.task('mocha', ['babel:test'], () => {
 gulp.task('watch', function () {
 	gulp.watch(paths.js.src, ['babel:src']);
 	gulp.watch(paths.test.src, ['babel:test']);
-	gulp.watch(paths.config.src, ['babel:config']);
+	//gulp.watch(paths.config.src, ['babel:config']);
+});
+
+gulp.task('watch:mocha', () => {
+	gulp.watch(paths.test.src, ['mocha']);
 });
 
 

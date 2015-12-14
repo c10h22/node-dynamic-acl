@@ -4,6 +4,8 @@
  */
 require('source-map-support').install();
 import acl from './lib/acl';
+import role from './lib/role';
 
 
-export default acl;
+export {acl as Acl};
+export {role as Role}
