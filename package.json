@@ -1,6 +1,6 @@
 {
 	"name": "dynamic-acl",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Dynamic Access Control List for Node.js to fully control your Roles, Resources, Privileges and Conditions",
 	"main": "dist/index.js",
 	"repository": {
