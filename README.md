@@ -31,7 +31,7 @@ var acl = new Acl(getUserRoleId, getResourceId);
 	.addRole(new Role('admin', ['user'])) //role parents can be declared in an array of strings
 	.addResource(new Resource('page', ['read', 'mark', 'change title'])) // resource = page, privileges = 'read', 'mark'...
 	.addResource(new Resource('book')) // resource without any privilege, it will take automatically '*'
-	.build();
+	.build(); //IMPORTANT: builds permission acls before settings access rules
 
 //This function will be used later for specific case
 var userCanMarkPage = function (user, page) {
