@@ -1,9 +1,11 @@
 import _ from 'lodash';
 
+let _ids = {};
 /**
  * Role class
  */
 class Role {
+
 	/**
 	 * Constructor
 	 * @param {string|Object} options - id of this role or an object representing its properties
@@ -41,7 +43,7 @@ class Role {
 	 */
 	setId(id) {
 		if (!_.isString(id))
-			throw new Error(`Resource ${id} cannot be renamed: roleId must be a string`);
+			throw new Error(`Role ${id} cannot be renamed: roleId must be a string`);
 		this.id = id;
 		return this;
 	}
@@ -93,7 +95,7 @@ class Role {
 	getParent(id) {
 		Role._checkRoleExist(id);
 		if (_.indexOf(this.parents, id) > -1) {
-			return Role.ids[id];
+			return _ids[id];
 		}
 		return null;
 	}
@@ -145,7 +147,7 @@ class Role {
 	 * @returns {Role}
 	 */
 	static _get(id) {
-		return Role.ids[id];
+		return _ids[id];
 	}
 
 	/**
@@ -155,13 +157,11 @@ class Role {
 	 * @returns {Role}
 	 */
 	static _add(role) {
-		if (!role instanceof Role)
+		if (role.constructor.name != 'Role')
 			throw Error(`You are trying to add an object that is not an instance of Role`);
-		if (!Role.ids)
-			Role.ids = {};
 
-		Role.ids[role.getId()] = role;
-		return Role.ids[role.getId()];
+		_ids[role.getId()] = role;
+		return _ids[role.getId()];
 	}
 
 	/**
@@ -171,21 +171,21 @@ class Role {
 	 */
 	static _remove(role) {
 		let roleId = role;
-		if (role instanceof Role)
+		if (role.constructor.name == 'Role')
 			roleId = role.getId();
 		else if (!_.isString(role)) {
 			throw Error(`Cannot remove ${role}: it must be an instance of Role or of type string`);
 		}
 
-		_.forEach(Role.ids, (rl, rlId) => {
+		_.forEach(_ids, (rl, rlId) => {
 			let parent = rl.getParent(roleId);
 			if (parent) {
 				rl.removeParents(parent);
 			}
 		});
-		delete Role.ids[roleId];
+		delete _ids[roleId];
 
-		return this;
+		return Role;
 	}
 
 	/**
@@ -202,8 +202,12 @@ class Role {
 		else if (roleIds.length == 1 & _.isString(roleIds[0]))
 			roles = [roleIds[0]];
 		for (let roleId of roles)
-			if (!Role.ids[roleId])
+			if (!_ids[roleId])
 				throw new Error(`Role ${roleId} doesn't exist`);
+	}
+
+	static _getAll() {
+		return _ids;
 	}
 
 	/**
