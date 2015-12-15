@@ -1,16 +1,22 @@
 {
-	"name": "assert-acl",
+	"name": "dynamic-acl",
 	"version": "1.0.0",
 	"description": "ACL for Sequelize",
 	"main": "dist/index.js",
+	"bugs": {
+		"url": "https://github.com/c10h22/node-dynamic-acl",
+		"email": "adnene.khalfa@gmail.com"
+	},
+	"author": {
+		"name": "Adnene KHALFA",
+		"email": "adnene.khalfa@gmail.com"
+	},
+	"license": "ISC",
 	"scripts": {
 		"preinstall": "gulp babel:src",
 		"test": "gulp mocha"
 	},
-	"author": "Adnene KHALFA <adnene.khalfa@gmail.com>",
-	"license": "ISC",
 	"dependencies": {
-		"sequelize": "^3.14.2"
 	},
 	"devDependencies": {
 		"babel": "^6.1.18",
