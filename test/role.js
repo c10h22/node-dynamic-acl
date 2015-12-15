@@ -10,13 +10,13 @@ describe('Roles', () => {
 		Role._add(new Role('supervisor', 'user'));
 	});
 	after(()=> {
-		for (let role of Object.keys(Role.ids)) {
+		for (let role of Object.keys(Role._getAll())) {
 			Role._remove(role);
 		}
 	});
 
 	it('should contains all previous added roles', () => {
-		Role.ids.should.have.keys('anonymous', 'user', 'supervisor');
+		Role._getAll().should.have.keys('anonymous', 'user', 'supervisor');
 		Role._get('anonymous').should.be.an.instanceof(Role);
 		Role._get('user').should.be.an.instanceof(Role);
 		Role._get('supervisor').should.be.an.instanceof(Role);
@@ -48,7 +48,7 @@ describe('Roles', () => {
 	});
 	it('can be removed without throwing error if role exists', () => {
 		Role._remove.bind(null, 'superadmin').should.not.throw();
-		Role.ids.should.not.have.properties('superadmin');
+		Role._getAll().should.not.have.properties('superadmin');
 		should(Role._get('superadmin')).be.null;
 	});
 
