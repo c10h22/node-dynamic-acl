@@ -5,10 +5,11 @@ let _fetchId = (resource) => resource.getId();
 
 class Resource {
 	/**
+	 * Constructor
 	 *
-	 * @param id
-	 * @param privileges
-	 * @param fetchIdFunc
+	 * @param {string} id - of this Resource
+	 * @param {Array.<string>} privileges access privileges for this resource
+	 * @trows {Error} if privileges is not an Array of strings
 	 */
 	constructor(id, privileges = ['*']) {
 		this.privileges = [];
@@ -19,8 +20,9 @@ class Resource {
 	/**
 	 * Sets this resource Id
 	 *
-	 * @param id
-	 * @returns {Resource}
+	 * @param id {string}
+	 * @returns {Resource} instance for chaining
+	 * @throws {Error} if id is not a string
 	 */
 	setId(id) {
 		if (!_.isString(id))
@@ -30,8 +32,9 @@ class Resource {
 	}
 
 	/**
-	 * Retrieve instance id
-	 * @returns {string}
+	 * Retrieve resource id
+	 *
+	 * @returns {string} id of this resource
 	 */
 	getId() {
 		return this.id;
@@ -39,7 +42,8 @@ class Resource {
 
 	/**
 	 * Retrieve access privileges for this resource
-	 * @returns {Array}
+	 *
+	 * @returns {Array.<string>} Array of access privileges
 	 */
 	getPrivileges() {
 		return this.privileges;
@@ -48,9 +52,9 @@ class Resource {
 	/**
 	 * Sets access privileges for this resource
 	 *
-	 * @param {Array} privileges
+	 * @param {Array.<string>} privileges to set
+	 * @throws {Error} if privileges is not an array of strings
 	 * @returns {Resource}
-	 * @throw {Error} - if privileges is not an array of strings
 	 */
 	setPrivileges(privileges) {
 		if (!_.isArray(privileges))
@@ -96,9 +100,10 @@ class Resource {
 
 	/**
 	 * Add a new instance to Resource lists
+	 *
 	 * @param {Resource} resource - a new Resource to add
-	 * @returns {Resource} - the new added Resource
-	 * @throws {Error} - if resource is not an instance of Resource
+	 * @returns {Resource} the new added Resource
+	 * @throws {Error} if resource is not an instance of Resource
 	 * @private
 	 */
 	static _add(resource) {
@@ -111,10 +116,11 @@ class Resource {
 
 	/**
 	 * Deletes a resource from the list
-	 * @param {Resource|string} resource - to delete
-	 * @returns {Resource} - static Resource
+	 *
+	 * @param {Resource|string} resource - Resource instance to delete
+	 * @returns {string} Resource id that have been removed
 	 * @private
-	 * @throws {Error} - if resource is not {Resource|string}
+	 * @throws {Error} if resource is not {Resource|string}
 	 */
 	static _remove(resource) {
 		let resourceId = resource;
@@ -126,7 +132,7 @@ class Resource {
 		if (!_ids[resourceId])
 			throw Error(`Resource ${resourceId} does not exist`);
 		delete _ids[resourceId];
-		return Resource;
+		return resourceId;
 	}
 
 	/**
@@ -141,6 +147,12 @@ class Resource {
 
 	static _getAll() {
 		return _ids;
+	}
+
+	static _reset() {
+		for (let id of Object.keys(Resource._getAll())) {
+			Resource._remove(id);
+		}
 	}
 }
 
