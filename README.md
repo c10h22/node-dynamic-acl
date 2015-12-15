@@ -48,6 +48,33 @@ acl.allow('visitor', 'page', 'read') //allow role 'visitor' to access resource '
 .allow('admin', 'book'); //all 'admin' to access all privileges of resource 'book'
 
 
+var anonymous = {
+	roleId: 'visitor'
+};
+var bob = {
+	firstname: 'Bob',
+	lastname: 'Marley',
+	roleId: 'user'
+};
+
+var me = {
+	firtname: 'Timmmmy',
+	lastname: 'Timmmmy',
+	roleId: 'admin'
+};
+
+var page1 = {
+	id: 'page 1',
+	title: 'Go further with node',
+	resourceId: 'page'
+};
+
+var book = {
+	id: 'book 1',
+	title: 'Go further with JS',
+	resourceId: 'book'
+};
+
 console.log('anonymous isAllowed page1:* ' + acl.isAllowed(anonymous, page1));
 console.log('anonymous isAllowed page1:read ' + acl.isAllowed(anonymous, page1, 'read'));
 console.log('anonymous isAllowed page1:mark ' + acl.isAllowed(anonymous, page1, 'mark'));
