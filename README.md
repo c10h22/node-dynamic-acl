@@ -6,9 +6,10 @@ Dynamic Access Control List for Node.js to fully control your Roles, Resources, 
 
 ##API
 
-_____
+
 
 ##Acl
+
 
 	<a name="Acl"></a>
 ## Acl
