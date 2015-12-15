@@ -3,6 +3,30 @@ node-dynamic-acl
 
 Dynamic Access Control List for Node.js to fully control your Roles, Resources, Privileges and Conditions
 
+#Install
+```
+	$ npm install dynamic-acl
+```
+
+#Quick Start
+
+```
+	var Acl = require('../dist').Acl;
+	var Role = require('../dist').Role;
+	var Resource = require('../dist').Resource;
+
+var getUserRoleId = function (user) {
+return user.roleId;
+};
+
+var getResourceId = function (resource) {
+return resource.resourceId;
+};
+
+
+var acl = new Acl(getUserRoleId, getResourceId);
+```
+
 #API Reference
 	<a name="Acl"></a>
 ## Acl
