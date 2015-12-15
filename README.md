@@ -10,17 +10,17 @@ Dynamic Access Control List for Node.js to fully control your Roles, Resources, 
 
 #Quick Start
 
-```
-	var Acl = require('../dist').Acl;
-	var Role = require('../dist').Role;
-	var Resource = require('../dist').Resource;
+```javascript
+var Acl = require('../dist').Acl;
+var Role = require('../dist').Role;
+var Resource = require('../dist').Resource;
 
 var getUserRoleId = function (user) {
-return user.roleId;
+	return user.roleId;
 };
 
 var getResourceId = function (resource) {
-return resource.resourceId;
+	return resource.resourceId;
 };
 
 
