@@ -10,13 +10,13 @@ class Role {
 	 * Constructor
 	 * @param {string|Object} options - id of this role or an object representing its properties
 	 * @oaram {Array} parents - An array containing all parents ids
-	 * @throws {Error} if one of the given parents was not declared before
+	 *
 	 * @example
 	 * var userRole = new Role({id: 'user'});
-	 * @example
 	 * var adminRole = new Role('admin', 'user');
-	 * @example
-	 * var supervisor = new Role({id:'supervisor', parents: ['admin']})
+	 * var supervisor = new Role({id:'supervisor', parents: ['admin']});
+	 *
+	 * @throws {Error} if one of the given parents was not declared before
 	 */
 	constructor(options, parents = null) {
 		if (_.isPlainObject(options) && !parents) {
@@ -154,7 +154,7 @@ class Role {
 	 * Adds a Role to the list of declared roles
 	 * @private
 	 * @param {Role} role
-	 * @returns {Role}
+	 * @returns {Role} instance added
 	 */
 	static _add(role) {
 		if (role.constructor.name != 'Role')
@@ -168,6 +168,7 @@ class Role {
 	 * Deletes role from the list of declared roles
 	 * @private
 	 * @param {Role|string} role
+	 * @returns {string} id of role that have been removed
 	 */
 	static _remove(role) {
 		let roleId = role;
@@ -185,7 +186,7 @@ class Role {
 		});
 		delete _ids[roleId];
 
-		return Role;
+		return roleId;
 	}
 
 	/**
@@ -208,6 +209,12 @@ class Role {
 
 	static _getAll() {
 		return _ids;
+	}
+
+	static _reset() {
+		for (let id of Object.keys(Role._getAll())) {
+			Role._remove(id);
+		}
 	}
 
 	/**
