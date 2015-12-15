@@ -263,6 +263,27 @@ class Acl {
 	isAllowed(user, resource, privilege = '*') {
 		let roleId = this._getRoleIdFunc(user);
 		let resourceId = this._getResourceIdFunc(resource);
+
+		if (!_.isString(roleId)) {
+			console.error(`got roleId not a string: ${roleId}`);
+			return false;
+		}
+		if (!_.isString(resourceId)) {
+			console.error(`got resourceId not a string: ${roleId}`);
+			return false;
+		}
+		if (!this.permissions[roleId]) {
+			console.warn(`${roleId} was not declared so I will answer that he is not allowed`);
+			return false;
+		}
+		if (!this.permissions[roleId][resourceId]) {
+			console.warn(`${resourceId} was not declared so I will answer that user is not allowed to this`);
+			return false;
+		}
+		if (!this.permissions[roleId][resourceId][privilege] && privilege != '*') {
+			return this.isRoleAllowed(roleId, resourceId, '*');
+		}
+
 		if (_.isFunction(this.permissions[roleId][resourceId][privilege].condition))
 			return this.isRoleAllowed(roleId, resourceId, privilege) && this.permissions[roleId][resourceId][privilege].condition(user, resource, privilege);
 		else
