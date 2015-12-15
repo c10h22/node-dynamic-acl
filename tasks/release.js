@@ -43,7 +43,7 @@ function commit() {
 		.pipe(excludeGitignore())
 		.pipe(git.add())
 		.pipe(git.commit(message))
-		.pipe(git.push('origin', 'master', function (err) {
+		.pipe(git.push('github', 'master', function (err) {
 			if (err) throw err;
 		}));
 }
