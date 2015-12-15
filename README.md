@@ -25,6 +25,28 @@ var getResourceId = function (resource) {
 
 
 var acl = new Acl(getUserRoleId, getResourceId);
+
+ acl.addRole(new Role('visitor')) //role without parent
+	.addRole(new Role('user', 'visitor')) //role with parent role
+	.addRole(new Role('admin', ['user'])) //role parents can be declared in an array of strings
+	.addResource(new Resource('page', ['read', 'mark', 'change title'])) // resource = page, privileges = 'read', 'mark'...
+	.addResource(new Resource('book')) // resource without any privilege, it will take automatically '*'
+	.build();
+
+//This function will be used later for specific case
+var userCanMarkPage = function (user, page) {
+	if (user.firstname == 'Timmmmy')
+		return true;
+	return false;
+};
+
+ acl.allow('visitor', 'page', 'read') //allow role 'visitor' to access resource 'page' with privilege 'read' (vistor can read page)
+	.allow('user', 'page') // allow role 'user' all privileges on resource 'page'
+	.allow('user', 'page', 'mark', userCanMarkPage) //allow role 'user' privilege 'mark' on resource 'page' with conditions depending on userCanMarkPage result
+	.deny('user', 'page', 'change title') //deny role 'user' to 'change title' of the 'page'
+	.allow('admin', 'page', 'change title') //as 'admin' inherits all rights of 'user', we allow 'admin' to access 'page' with privilege 'change title'
+	.allow('admin', 'book'); //all 'admin' to access all privileges of resource 'book'
+
 ```
 
 #API Reference
