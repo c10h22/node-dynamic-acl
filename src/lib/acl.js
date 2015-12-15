@@ -233,6 +233,14 @@ class Acl {
 		return this;
 	}
 
+	/**
+	 *
+	 * @param allow
+	 * @param roleId
+	 * @param resourceId
+	 * @returns {Acl}
+	 * @private
+	 */
 	_allowOrDenyAll(allow, roleId, resourceId) {
 		if (!_.isString(roleId) && roleId.constructor.name != 'Role')
 			throw Error(`Role must be a string or an instance of Role: ${roleId} given`);

@@ -8,6 +8,8 @@ var gulp = require('gulp'),
 	util = require('gulp-util'),
 	excludeGitignore = require('gulp-exclude-gitignore'),
 	fs = require('fs'),
+	concat = require('gulp-concat'),
+	gulpJsdoc2md = require('gulp-jsdoc-to-markdown'),
 	conventionalChangelog = require('gulp-conventional-changelog');
 
 /**
@@ -67,9 +69,9 @@ function changelog() {
 		.pipe(gulp.dest('./'));
 }
 
-gulp.task('changelog:patch', ['patch'], changelog);
-gulp.task('changelog:feature', ['feature'], changelog);
-gulp.task('changelog:release', ['release'], changelog);
+gulp.task('changelog:patch', ['patch', 'docs'], changelog);
+gulp.task('changelog:feature', ['feature', 'docs'], changelog);
+gulp.task('changelog:release', ['release', 'docs'], changelog);
 
 gulp.task('tag:patch', ['commit:patch'], tag);
 gulp.task('tag:feature', ['commit:feature'], tag);
@@ -88,3 +90,14 @@ gulp.task('feature', function () {
 gulp.task('release', function () {
 	return inc('major');
 });
+
+gulp.task('docs', function () {
+	return gulp.src('src/**/*.js')
+		.pipe(concat('README.md'))
+		.pipe(gulpJsdoc2md({template: fs.readFileSync('./template.hbs', 'utf8')}))
+		.on('error', function (err) {
+			gutil.log('jsdoc2md failed:', err.message)
+		})
+		.pipe(gulp.dest('./'))
+});
+
