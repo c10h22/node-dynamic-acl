@@ -1,6 +1,5 @@
 Sequelize Acl
 ==========
 
----------------
 
-A node module to manage access to Sequelize models
+Dynamic Access Control List for Node.js to fully control your Roles, Resources, Privileges and Conditions
