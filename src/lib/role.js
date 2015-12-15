@@ -77,9 +77,9 @@ class Role {
 	}
 
 	/**
-	 * Returns an array of parent roles
+	 * Returns an array of parent roles instances
 	 *
-	 * @returns {Array} - of parent roles
+	 * @returns {Array.<Role>} Array of parent roles
 	 */
 	getParents() {
 		return this.parents.map((parentId) => Role._get(parentId));

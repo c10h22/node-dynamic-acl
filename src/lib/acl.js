@@ -19,6 +19,15 @@ import Resource from './resource';
  */
 
 /**
+ * Function that be used to check if User (with role Id) should be access granted to Resource (with resource Id)
+ *
+ * @name permissionConditionFunc
+ * @function
+ * @param {*} user - User which will try to access the resource
+ * @param {*} resource - Resource which will be accessed
+ */
+
+/**
  * This class holds all information about Roles, Resources and Permissions
  */
 class Acl {
@@ -137,7 +146,17 @@ class Acl {
 		return Resource._get(id);
 	}
 
+	/**
+	 * Build all permissions based on added {@link Role} and {@link Resource}. Permissions are initialized
+	 * to allow = false and condition = null
+	 *
+	 * @returns {Acl} this instance for chaining
+	 */
 	build() {
+		let defaultPermission = {
+			allowed: null,
+			condition: null
+		};
 		_.forEach(this.roles, (roleId) => {
 			if (!this.permissions[roleId])
 				this.permissions[roleId] = {};
@@ -145,14 +164,170 @@ class Acl {
 				if (!this.permissions[roleId][resourceId])
 					this.permissions[roleId][resourceId] = {};
 				_.forEach(this.getResource(resourceId).getPrivileges(), (privilegeId) => {
-					this.permissions[roleId][resourceId][privilegeId] = {
-						allowed: false,
-						condition: null
-					};
+					this.permissions[roleId][resourceId][privilegeId] = defaultPermission;
 				});
 			});
 		});
 		return this;
+	}
+
+	/**
+	 * Allow User with Role Id to access Privileged Resource (which have Resource Id) under condition
+	 *
+	 * @param roleId {string|Role} - Role Id or Role instance
+	 * @param resourceId {string|Resource} - Resource Id or Resource instance
+	 * @param privilege {string} - Privilege (default is '*' all)
+	 * @param condition {permissionConditionFunc} - Conditional permission function (default is null)
+	 */
+
+	allow(roleId, resourceId, privilege = '*', condition = null) {
+		return this._allowOrDeny(true, roleId, resourceId, privilege, condition);
+	}
+
+	/**
+	 * Deny User with Role Id to access Privileged Resource (which have Resource Id) under condition
+	 *
+	 * @param roleId {string|Role} - Role Id or Role instance
+	 * @param resourceId {string|Resource} - Resource Id or Resource instance
+	 * @param privilege {string} - Privilege (default is '*' all)
+	 * @param condition {permissionConditionFunc} - Conditional permission function (default is null)
+	 */
+
+	deny(roleId, resourceId, privilege = '*', condition = null) {
+		return this._allowOrDeny(false, roleId, resourceId, privilege, condition);
+	}
+
+	/**
+	 * Allow User with Role Id to access Privileged Resource (which have Resource Id) under condition
+	 * @param allow {boolean} true = allowed, false = denied
+	 * @param roleId {string|Role} - Role Id or Role instance
+	 * @param resourceId {string|Resource} - Resource Id or Resource instance
+	 * @param privilege {string} - Privilege (default is '*' all)
+	 * @param condition {permissionConditionFunc} - Conditional permission function (default is null)
+	 */
+
+	_allowOrDeny(allow, roleId, resourceId, privilege = '*', condition = null) {
+		if (!_.isString(roleId) && roleId.constructor.name != 'Role')
+			throw Error(`Role must be a string or an instance of Role: ${roleId} given`);
+		if (!_.isString(privilege))
+			throw Error(`privilege must be a string: ${privilege} given`);
+		if (condition != null && !_.isFunction(condition))
+			throw Error(`provided condition is not a valid function: ${condition} given`);
+		if (roleId.constructor.name == 'Role')
+			roleId = roleId.getId();
+		if (resourceId.constructor.name == 'Resource')
+			resourceId = resourceId.getId();
+		if (!_.contains(this.roles, roleId))
+			throw Error(`role id: ${roleId} could not be found`);
+		if (!_.contains(this.resources, resourceId))
+			throw Error(`resource id: ${resourceId} could not be found`);
+		if (!this.permissions[roleId][resourceId][privilege])
+			throw Error(`privilege ${privilege} could not be found`);
+		if (privilege != '*')
+			this.permissions[roleId][resourceId][privilege] = {
+				allowed: allow,
+				condition: condition
+			};
+		else
+			this._allowOrDenyAll(allow, roleId, resourceId);
+		return this;
+	}
+
+	_allowOrDenyAll(allow, roleId, resourceId) {
+		if (!_.isString(roleId) && roleId.constructor.name != 'Role')
+			throw Error(`Role must be a string or an instance of Role: ${roleId} given`);
+		if (roleId.constructor.name == 'Role')
+			roleId = roleId.getId();
+		if (resourceId.constructor.name == 'Resource')
+			resourceId = resourceId.getId();
+		if (!_.contains(this.roles, roleId))
+			throw Error(`role id: ${roleId} could not be found`);
+		if (!_.contains(this.resources, resourceId))
+			throw Error(`resource id: ${resourceId} could not be found`);
+		for (let privilege of Object.keys(this.permissions[roleId][resourceId]))
+			this.permissions[roleId][resourceId][privilege] = {
+				allowed: allow,
+				condition: null
+			};
+		return this;
+	}
+
+	/**
+	 * Checks if user is allowed to access resource with a given privilege. If yes, it checks condition
+	 *
+	 * @param user {*}
+	 * @param resource {*}
+	 * @param privilege {string}
+	 * @returns {boolean}
+	 */
+	isAllowed(user, resource, privilege = '*') {
+		let roleId = this._getRoleIdFunc(user);
+		let resourceId = this._getResourceIdFunc(resource);
+		if (_.isFunction(this.permissions[roleId][resourceId][privilege].condition))
+			return this.isRoleAllowed(roleId, resourceId, privilege) && this.permissions[roleId][resourceId][privilege].condition(user, resource, privilege);
+		else
+			return this.isRoleAllowed(roleId, resourceId, privilege);
+
+	}
+
+	/**
+	 * Checks if roleId has access to resourceId with privilege. If not, it will check if one of the related parents
+	 * has access to resource id
+	 *
+	 * @param {string} roleId
+	 * @param {string}resourceId
+	 * @param {string} privilege
+	 * @returns {boolean}
+	 */
+	isRoleAllowed(roleId, resourceId, privilege = '*') {
+		if (!_.isString(roleId)) {
+			console.warn(`got roleId not a string: ${roleId}`);
+			return false;
+		}
+		if (!_.isString(resourceId)) {
+			console.warn(`got resourceId not a string: ${roleId}`);
+			return false;
+		}
+		if (!this.permissions[roleId][resourceId][privilege] && privilege != '*') {
+			return this.isRoleAllowed(roleId, resourceId, '*');
+		}
+		let allowed = this.permissions[roleId][resourceId][privilege].allowed;
+		if (allowed == null) //check parents if it was not defined how this role has access to this resource
+			return this.isAnyParentAllowed(roleId, resourceId, privilege);
+		else
+			return allowed;
+	}
+
+	/**
+	 * Checks if any role's parents is allowed to access resourceId with privileges
+	 *
+	 * @param {string} roleId
+	 * @param {string} resourceId
+	 * @param {string} privilege
+	 * @returns {boolean}
+	 */
+	isAnyParentAllowed(roleId, resourceId, privilege) {
+		let role = this.getRole(roleId);
+		let parents = role.getParents();
+		for (let parent of parents) {
+			if (this.isRoleAllowed(parent.getId(), resourceId, privilege))
+				return true;
+		}
+		return false;
+
+	}
+
+	/**
+	 * Returns an object representing roleId permissions
+	 * @param {string|Role} roleId
+	 * @returns {Array.<Object>} Permissions for each resource
+	 */
+	getPermissions(roleId) {
+		if (!_.isString(roleId) && roleId.constructor.name != 'Role')
+			throw Error(`Role must be a string or an instance of Role: ${roleId} given`);
+		if (roleId.constructor.name == 'Role')
+			roleId = roleId.getId();
+		return this.permissions[roleId];
 	}
 
 
