@@ -1,6 +1,6 @@
 {
 	"name": "dynamic-acl",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "ACL for Sequelize",
 	"main": "dist/index.js",
 	"repository": {
@@ -15,15 +15,13 @@
 		"name": "Adnene KHALFA",
 		"email": "adnene.khalfa@gmail.com"
 	},
-
 	"license": "ISC",
 	"scripts": {
 		"preinstall": "gulp babel:src",
 		"prepublish": "gulp",
 		"test": "gulp mocha"
 	},
-	"dependencies": {
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"babel": "^6.1.18",
 		"babel-core": "^6.3.15",
