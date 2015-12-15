@@ -42,10 +42,7 @@ function commit() {
 	return gulp.src('./', {buffer: false})
 		.pipe(excludeGitignore())
 		.pipe(git.add())
-		.pipe(git.commit(message))
-		.pipe(git.push('github', 'master', function (err) {
-			if (err) throw err;
-		}));
+		.pipe(git.commit(message));
 }
 
 function tag() {
