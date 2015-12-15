@@ -17,7 +17,6 @@
 	},
 	"license": "ISC",
 	"scripts": {
-		"preinstall": "gulp babel:src",
 		"prepublish": "gulp",
 		"test": "gulp mocha"
 	},
