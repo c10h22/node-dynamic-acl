@@ -47,6 +47,30 @@ acl.allow('visitor', 'page', 'read') //allow role 'visitor' to access resource '
 .allow('admin', 'page', 'change title') //as 'admin' inherits all rights of 'user', we allow 'admin' to access 'page' with privilege 'change title'
 .allow('admin', 'book'); //all 'admin' to access all privileges of resource 'book'
 
+
+console.log('anonymous isAllowed page1:* ' + acl.isAllowed(anonymous, page1));
+console.log('anonymous isAllowed page1:read ' + acl.isAllowed(anonymous, page1, 'read'));
+console.log('anonymous isAllowed page1:mark ' + acl.isAllowed(anonymous, page1, 'mark'));
+console.log('anonymous isAllowed page1:change title ' + acl.isAllowed(anonymous, page1, 'change title'));
+console.log('anonymous isAllowed book:* ' + acl.isAllowed(anonymous, book));
+console.log('anonymous isAllowed book:sell ' + acl.isAllowed(anonymous, book, 'sell'));            //privilege was not declared previously -> inherit from book:*
+
+
+console.log('bob isAllowed page1:* ' + acl.isAllowed(bob, page1));
+console.log('bob isAllowed page1:read ' + acl.isAllowed(bob, page1, 'read'));
+console.log('bob isAllowed page1:mark ' + acl.isAllowed(bob, page1, 'mark'));
+console.log('bob isAllowed page1:change title ' + acl.isAllowed(bob, page1, 'change title'));
+console.log('bob isAllowed book:* ' + acl.isAllowed(bob, book));
+console.log('bob isAllowed book:sell ' + acl.isAllowed(bob, book, 'sell'));            //privilege was not declared previously -> inherit from book:*
+
+console.log('me isAllowed page1:* ' + acl.isAllowed(me, page1));
+console.log('me isAllowed page1:read ' + acl.isAllowed(me, page1, 'read'));
+console.log('me isAllowed page1:mark ' + acl.isAllowed(me, page1, 'mark'));
+console.log('me isAllowed page1:change title ' + acl.isAllowed(me, page1, 'change title'));
+console.log('me isAllowed book:* ' + acl.isAllowed(me, book));
+console.log('me isAllowed book:sell ' + acl.isAllowed(me, book, 'sell'));            //privilege was not declared previously -> inherit from book:*
+
+
 ```
 
 #API Reference
