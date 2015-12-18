@@ -174,26 +174,57 @@ class Acl {
 	/**
 	 * Allow User with Role Id to access Privileged Resource (which have Resource Id) under condition
 	 *
+	 * @example
+	 *
+	 * acl.allow('user', 'article', 'write')
+	 *        .allow('user', 'article', ['read', 'comment']);
+	 *    .allow('user', 'article', 'modify', function(user, blog){
+	 * 		return user.id == article.author_id;
+	 * 		});
+	 *
 	 * @param roleId {string|Role} - Role Id or Role instance
-	 * @param resourceId {string|Resource} - Resource Id or Resource instance
-	 * @param privilege {string} - Privilege (default is '*' all)
-	 * @param condition {permissionConditionFunc} - Conditional permission function (default is null)
+	 * @param resourceId {string|Resource} Resource Id or Resource instance
+	 * @param privilege {string|Array.<string>} Privilege (default is '*' all)
+	 * @param condition {permissionConditionFunc} Conditional permission function (default is null)
+	 * @return {Acl} this instance for chaining
+	 *
 	 */
 
 	allow(roleId, resourceId, privilege = '*', condition = null) {
-		return this._allowOrDeny(true, roleId, resourceId, privilege, condition);
+		if (_.isArray(privilege)) {
+			privilege.map((p) => {
+				this.allow(roleId, resourceId, p, condition);
+			});
+			return this;
+		} else {
+			return this._allowOrDeny(true, roleId, resourceId, privilege, condition);
+		}
 	}
 
 	/**
 	 * Deny User with Role Id to access Privileged Resource (which have Resource Id) under condition
 	 *
+	 * @example
+	 * acl.deny('anonymous', 'article', 'write')
+	 *    .deny('anonymous', 'article', ['modify', 'comment'])
+	 *      .deny('anonymous', 'article', 'read', function(user, article){
+	 * 		return article.is_public;
+	 * });
+	 *
 	 * @param roleId {string|Role} - Role Id or Role instance
 	 * @param resourceId {string|Resource} - Resource Id or Resource instance
-	 * @param privilege {string} - Privilege (default is '*' all)
+	 * @param privilege {string|Array.<string>} - Privilege (default is '*' all)
 	 * @param condition {permissionConditionFunc} - Conditional permission function (default is null)
+	 * @return {Acl} this instance for chaining
 	 */
 
 	deny(roleId, resourceId, privilege = '*', condition = null) {
+		if (_.isArray(privilege)) {
+			privilege.map((p)=> {
+				this.deny(roleId, resourceId, p, condition)
+			});
+			return this;
+		}
 		return this._allowOrDeny(false, roleId, resourceId, privilege, condition);
 	}
 
@@ -358,8 +389,6 @@ class Acl {
 			roleId = roleId.getId();
 		return this.permissions[roleId];
 	}
-
-
 
 
 }

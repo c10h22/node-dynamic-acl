@@ -64,6 +64,7 @@ describe('Acl', () => {
 			fakeAcl.allow.bind(fakeAcl, 'user', 'row1', 'patch', {a: 1}).should.throw(Error);
 			fakeAcl.allow.bind(fakeAcl, 'user', 'row1', 'get', {a: 1}).should.throw(Error);
 
+
 			fakeAcl.deny.bind(fakeAcl, 'admin', 'row3', 'patch', {a: 1}).should.throw(Error);
 			fakeAcl.deny.bind(fakeAcl, 'user', 'row3', 'patch', {a: 1}).should.throw(Error);
 			fakeAcl.deny.bind(fakeAcl, 'user', 'row1', 'patch', {a: 1}).should.throw(Error);
@@ -71,10 +72,30 @@ describe('Acl', () => {
 
 
 			fakeAcl.allow.bind(fakeAcl, 'anonyme', 'row1', 'get', function () {
-				return true
+				return true;
 			}).should.not.throw(Error);
-		});
 
+
+		});
+		it('should be possible to allow or deny an array of privilege for a given resource', () => {
+			let fakeAcl = new Acl();
+			fakeAcl.addRole(new Role('anonyme'));
+			fakeAcl.addRole(new Role('user', ['anonyme']));
+			fakeAcl.addResource(new Resource('row1', ['get', 'post']));
+			fakeAcl.addResource(new Resource('row2'));
+			fakeAcl.build();
+
+			fakeAcl.allow.bind(fakeAcl, 'anonyme', 'row1', ['get', 'post'], function () {
+				return true;
+			}).should.not.throw(Error);
+			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: true});
+			fakeAcl.permissions['anonyme']['row1']['post'].condition().should.be.eql(true);
+
+			fakeAcl.deny.bind(fakeAcl, 'anonyme', 'row1', ['post', 'get']).should.not.throw(Error);
+			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: false});
+
+
+		});
 		it('should allow only given permissions', () => {
 			fakeAcl.permissions['anonyme']['row1']['get'].should.be.containEql({allowed: true});
 			fakeAcl.permissions['anonyme']['row1']['get'].condition().should.be.eql(true);
