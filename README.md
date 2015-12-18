@@ -119,8 +119,8 @@ This class holds all information about Roles, Resources and Permissions
     * [.removeResource(resource)](#Acl+removeResource) ⇒ <code>[Acl](#Acl)</code>
     * [.getResource(id)](#Acl+getResource) ⇒ <code>[Resource](#Resource)</code> &#124; <code>null</code>
     * [.build()](#Acl+build) ⇒ <code>[Acl](#Acl)</code>
-    * [.allow(roleId, resourceId, privilege, condition)](#Acl+allow)
-    * [.deny(roleId, resourceId, privilege, condition)](#Acl+deny)
+    * [.allow(roleId, resourceId, privilege, condition)](#Acl+allow) ⇒ <code>[Acl](#Acl)</code>
+    * [.deny(roleId, resourceId, privilege, condition)](#Acl+deny) ⇒ <code>[Acl](#Acl)</code>
     * [._allowOrDeny(allow, roleId, resourceId, privilege, condition)](#Acl+_allowOrDeny)
     * [.isAllowed(user, resource, privilege)](#Acl+isAllowed) ⇒ <code>boolean</code>
     * [.isRoleAllowed(roleId, resourceId, privilege)](#Acl+isRoleAllowed) ⇒ <code>boolean</code>
@@ -255,31 +255,49 @@ to allow = false and condition = null
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 **Returns**: <code>[Acl](#Acl)</code> - this instance for chaining  
 <a name="Acl+allow"></a>
-### acl.allow(roleId, resourceId, privilege, condition)
+### acl.allow(roleId, resourceId, privilege, condition) ⇒ <code>[Acl](#Acl)</code>
 Allow User with Role Id to access Privileged Resource (which have Resource Id) under condition
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
+**Returns**: <code>[Acl](#Acl)</code> - this instance for chaining  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | roleId | <code>string</code> &#124; <code>[Role](#Role)</code> | Role Id or Role instance |
 | resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> | Resource Id or Resource instance |
-| privilege | <code>string</code> | Privilege (default is '*' all) |
+| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | Privilege (default is '*' all) |
 | condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | Conditional permission function (default is null) |
 
+**Example**  
+```js
+acl.allow('user', 'article', 'write')
+       .allow('user', 'article', ['read', 'comment']);
+   .allow('user', 'article', 'modify', function(user, blog){
+		return user.id == article.author_id;
+		});
+```
 <a name="Acl+deny"></a>
-### acl.deny(roleId, resourceId, privilege, condition)
+### acl.deny(roleId, resourceId, privilege, condition) ⇒ <code>[Acl](#Acl)</code>
 Deny User with Role Id to access Privileged Resource (which have Resource Id) under condition
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
+**Returns**: <code>[Acl](#Acl)</code> - this instance for chaining  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | roleId | <code>string</code> &#124; <code>[Role](#Role)</code> | Role Id or Role instance |
 | resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> | Resource Id or Resource instance |
-| privilege | <code>string</code> | Privilege (default is '*' all) |
+| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | Privilege (default is '*' all) |
 | condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | Conditional permission function (default is null) |
 
+**Example**  
+```js
+acl.deny('anonymous', 'article', 'write')
+   .deny('anonymous', 'article', ['modify', 'comment'])
+     .deny('anonymous', 'article', 'read', function(user, article){
+		return article.is_public;
+});
+```
 <a name="Acl+_allowOrDeny"></a>
 ### acl._allowOrDeny(allow, roleId, resourceId, privilege, condition)
 Allow User with Role Id to access Privileged Resource (which have Resource Id) under condition
