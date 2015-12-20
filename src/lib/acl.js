@@ -33,9 +33,15 @@ import Resource from './resource';
 class Acl {
 	/**
 	 * Constructor
+	 * @example
+	 * var myAcl = new Acl(function(user){
+	 * 		return user.getRole();
+	 * }, function(resource){
+	 * 		return resource.getResourceId();
+	 * });
 	 *
-	 * @param {fetchRoleIdFunc} roleIdFetchFunc - function that will let Acl fetch Role id
-	 * @param {fetchResourceIdFunc} resourceIdFetchFunc - function that will let Acl fetch Resource id
+	 * @param {fetchRoleIdFunc} roleIdFetchFunc - function that will let Acl fetch Role id (default will return empty string)
+	 * @param {fetchResourceIdFunc} resourceIdFetchFunc - function that will let Acl fetch Resource id (default will return empty string)
 	 */
 	constructor(roleIdFetchFunc = ()=>'', resourceIdFetchFunc = () => '') {
 		this.setRoleIdFetchFunc(roleIdFetchFunc);
@@ -75,27 +81,43 @@ class Acl {
 	/**
 	 * Add a new Role to Access Control List
 	 *
-	 * @param {Role} role instance to add
-	 * @returns {Acl} this instance for chaining
-	 * @throws {Error} if role is not an instance of {@link Role}
+	 * @example
+	 * acl.addRole('anonyme');
+	 * acl.addRole('user', ['anonyme']);
+	 * acl.addRole(new Role('admin', ['user'], acl));
+	 * acl.addRole('super', [new Role('normal', [], acl)]);
+	 *
+	 * @param {Role|string} role instance to add
+	 * @param {Array.<string>|Array.<Role>} Parents default is empty array
+	 * @returns {Acl} this instanc@e for chaining
+	 * @throws {Error} if role is not an instance of {@link Role} or a string
 	 */
-	addRole(role) {
-		let roleInstance = Role._add(role);
-		this.roles.push(roleInstance.getId());
-		this.roles = _.unique(this.roles);
+	addRole(role, parents = []) {
+		if (_.isString(role))
+			role = new Role(role, parents, this);
+
+		if (role.constructor.name == 'Role')
+			this.roles.push(role);
+		else
+			throw new Error(`${role} is not a string nor an instance of Role so I can't add it`);
+		if (role.getAcl() == null)
+			role.setAcl(this);
 		return this;
 	}
 
 	/**
-	 * Deletes role frol the list of declared roles
+	 * Deletes role from the list of declared roles
+	 * @example
+	 * acl.remove('anonymous');
 	 *
 	 * @param {Role|string} role
 	 * @return {Acl} this instance for chaining
 	 */
 	removeRole(role) {
-		let roleId = Role._remove(role);
-		this.roles = _.without(this.roles, roleId);
-		return this;
+		let roleId = role;
+		if (role.constructor.name == 'Role')
+			roleId = role.getId();
+		this.roles = this.roles.filter((role) => role.getId() != roleId);
 	}
 
 	/**
@@ -105,33 +127,44 @@ class Acl {
 	 * @returns {Role} a Role instance if it was previously added or null if not exists
 	 */
 	getRole(id) {
-		return Role._get(id);
+		let roles = this.roles.filter((role) => role.getId() == id);
+		if (roles.length)
+			return roles[0];
+		return null;
 	}
 
 	/**
 	 * Add a new resource to Access Control List
+	 * @example
+	 * acl.addResource(new Resource('page'));
+	 * acl.addResource(new Resource('book', ['read', 'buy']);
 	 *
 	 * @param {Resource} resource - to add to Access Control List
 	 * @returns {Acl} this instance for chaining
 	 * @throws {Error} if resource is not an instance of {@link Acl}
 	 */
 	addResource(resource) {
-		let resourceInstance = Resource._add(resource);
-		this.resources.push(resourceInstance.getId());
-		this.resources = _.unique(this.resources);
+		let res = this.getResource(resource);
+		if (!res)
+			this.resources.push(resource);
 		return this;
 	}
 
 	/**
 	 * Removes a resource from Access Control List
+	 * @example
+	 * acl.removeResource('page');
+	 * acl.removeResource(bookResourceInstance);
 	 *
 	 * @param {Resource|string} resource to remove
 	 * @throws {Error} if resource is not an instance of {@link Resource} or of type string
 	 * @returns {Acl} this instance for chaining
 	 */
 	removeResource(resource) {
-		let resourceId = Resource._remove(resource);
-		this.resources = _.without(this.resources, resourceId);
+		let resourceId = resource;
+		if (resource instanceof Resource)
+			resourceId = resource.getId();
+		this.resources = this.resources.filter((resource) => resource.getId() != resourceId);
 
 		return this;
 	}
@@ -139,11 +172,20 @@ class Acl {
 	/**
 	 * Get resource instance by its Id if it was previously added to Access Control List
 	 *
-	 * @param {string} id - of resource to get
+	 * @example
+	 * acl.getResource('page');
+	 *
+	 * @param {string|Resource} id - of resource to get
 	 * @returns {Resource|null} Resource instance if it exists. will return null otherwise
 	 */
 	getResource(id) {
-		return Resource._get(id);
+		let resourceId = id;
+		if (id instanceof Resource)
+			resourceId = id.getId();
+		let resources = this.resources.filter((resource) => resource.getId() == resourceId);
+		if (resources.length)
+			return resources[0];
+		return null;
 	}
 
 	/**
@@ -157,14 +199,15 @@ class Acl {
 			allowed: null,
 			condition: null
 		};
-		_.forEach(this.roles, (roleId) => {
+		let roles = this.roles.map((role) => role.getId());
+		_.forEach(roles, (roleId) => {
 			if (!this.permissions[roleId])
 				this.permissions[roleId] = {};
-			_.forEach(this.resources, (resourceId) => {
-				if (!this.permissions[roleId][resourceId])
-					this.permissions[roleId][resourceId] = {};
-				_.forEach(this.getResource(resourceId).getPrivileges(), (privilegeId) => {
-					this.permissions[roleId][resourceId][privilegeId] = defaultPermission;
+			_.forEach(this.resources, (resource) => {
+				if (!this.permissions[roleId][resource.getId()])
+					this.permissions[roleId][resource.getId()] = {};
+				_.forEach(resource.getPrivileges(), (privilegeId) => {
+					this.permissions[roleId][resource.getId()][privilegeId] = defaultPermission;
 				});
 			});
 		});
@@ -177,7 +220,7 @@ class Acl {
 	 * @example
 	 *
 	 * acl.allow('user', 'article', 'write')
-	 *        .allow('user', 'article', ['read', 'comment']);
+	 *    .allow('user', 'article', ['read', 'comment']);
 	 *    .allow('user', 'article', 'modify', function(user, blog){
 	 * 		return user.id == article.author_id;
 	 * 		});
@@ -207,9 +250,9 @@ class Acl {
 	 * @example
 	 * acl.deny('anonymous', 'article', 'write')
 	 *    .deny('anonymous', 'article', ['modify', 'comment'])
-	 *      .deny('anonymous', 'article', 'read', function(user, article){
+	 *    .deny('anonymous', 'article', 'read', function(user, article){
 	 * 		return article.is_public;
-	 * });
+	 * 	  });
 	 *
 	 * @param roleId {string|Role} - Role Id or Role instance
 	 * @param resourceId {string|Resource} - Resource Id or Resource instance
@@ -248,9 +291,9 @@ class Acl {
 			roleId = roleId.getId();
 		if (resourceId.constructor.name == 'Resource')
 			resourceId = resourceId.getId();
-		if (!_.contains(this.roles, roleId))
+		if (!this.getRole(roleId))
 			throw Error(`role id: ${roleId} could not be found`);
-		if (!_.contains(this.resources, resourceId))
+		if (!this.getResource(resourceId))
 			throw Error(`resource id: ${resourceId} could not be found`);
 		if (!this.permissions[roleId][resourceId][privilege])
 			throw Error(`privilege ${privilege} could not be found`);
@@ -279,9 +322,9 @@ class Acl {
 			roleId = roleId.getId();
 		if (resourceId.constructor.name == 'Resource')
 			resourceId = resourceId.getId();
-		if (!_.contains(this.roles, roleId))
+		if (!this.getRole(roleId))
 			throw Error(`role id: ${roleId} could not be found`);
-		if (!_.contains(this.resources, resourceId))
+		if (!this.getResource(resourceId))
 			throw Error(`resource id: ${resourceId} could not be found`);
 		for (let privilege of Object.keys(this.permissions[roleId][resourceId]))
 			this.permissions[roleId][resourceId][privilege] = {
@@ -293,6 +336,10 @@ class Acl {
 
 	/**
 	 * Checks if user is allowed to access resource with a given privilege. If yes, it checks condition
+	 *
+	 * @example
+	 * acl.isAllowed(userObject, resourceObject, 'read');
+	 * acl.isAllowed(userObject, resourceObject);
 	 *
 	 * @param user {*}
 	 * @param resource {*}
@@ -333,6 +380,10 @@ class Acl {
 	/**
 	 * Checks if roleId has access to resourceId with privilege. If not, it will check if one of the related parents
 	 * has access to resource id
+	 *
+	 * @example
+	 * acl.isRoleAllowed('user', 'book', 'read');
+	 * acl.isRoleAllow('user', 'page');
 	 *
 	 * @param {string} roleId
 	 * @param {string}resourceId
@@ -379,6 +430,8 @@ class Acl {
 
 	/**
 	 * Returns an object representing roleId permissions
+	 * @example
+	 * acl.getPermissions('user');
 	 * @param {string|Role} roleId
 	 * @returns {Array.<Object>} Permissions for each resource
 	 */

@@ -1,75 +1,81 @@
 import assert from 'assert';
 import should from 'should';
 import sinon from 'sinon';
-import {Role} from '../dist';
+import {Role, Acl} from '../dist';
 
 describe('Roles', () => {
+	let acl;
 	before(() => {
-		Role._add(new Role('anonymous'));
-		Role._add(new Role({id: 'user', parents: ['anonymous']}));
-		Role._add(new Role('supervisor', 'user'));
+		acl = new Acl();
 	});
-	after(()=> {
-		for (let role of Object.keys(Role._getAll())) {
-			Role._remove(role);
-		}
+	it('should be declared using only an id', () => {
+		((roleId) =>  new Role(roleId)).bind(null, 'user').should.not.throw();
 	});
 
-	it('should contains all previous added roles', () => {
-		Role._getAll().should.have.keys('anonymous', 'user', 'supervisor');
-		Role._get('anonymous').should.be.an.instanceof(Role);
-		Role._get('user').should.be.an.instanceof(Role);
-		Role._get('supervisor').should.be.an.instanceof(Role);
-	});
-	it('created without parents should have an empty parents array', () => {
-		Role._get('anonymous').getParents().should.be.Array().which.length(0);
+	it('should throw an error if declared using id, parents and without acl', () => {
+		((roleId, parents) =>  new Role(roleId, parents)).bind(null, 'user', ['anonymous']).should.throw(Error);
 	});
 
-	it('created with one or more parents should have their parent id in an array', () => {
-		Role._get('user').getParents().should.be.Array().which.length(1);
-		Role._get('user').getParent('anonymous').constructor.name.should.be.eql('Role');
-		Role._get('user').getParent('anonymous').getId().should.be.eql('anonymous');
+	it('should no throw an error if declared using id, parents and acl', () => {
+		let anonymous = new Role('anonymous');
+		acl.addRole(anonymous);
+		((roleId, parents, acl) =>  new Role(roleId, parents, acl)).bind(null, 'user', ['anonymous'], acl).should.not.throw();
+		((roleId, parents, acl) =>  new Role(roleId, parents, acl)).bind(null, 'user', [anonymous], acl).should.not.throw();
 
-		Role._get('supervisor').getParents().should.be.Array().which.length(1);
-		Role._get('supervisor').getParent('user').constructor.name.should.be.eql('Role');
-		Role._get('supervisor').getParent('user').getId().should.be.eql('user');
-	});
-	it('can\'t have undeclared parent, only declared roles can be used as parent', () => {
-		((opts)=> Role._add(new Role(opts))).bind(null, {id: 'admin', parents: ['undeclared']}).should.throw(Error);
-		((opts)=> Role._add(new Role(opts))).bind(null, {id: 'admin', parents: ['user']}).should.not.throw();
-	});
-	it('can be created with an array of parent roles', () => {
-		Role._add(new Role({id: 'superadmin', parents: ['admin', 'user']}));
-		Role._get('superadmin').getParents().should.be.an.Array().which.length(2);
-	});
-	it('can be created with a string of parent role', () => {
-		Role._add(new Role({id: 'root', parents: 'superadmin'}));
-		Role._get('root').getParents().should.be.an.Array().which.length(1);
-	});
-	it('can be removed without throwing error if role exists', () => {
-		Role._remove.bind(null, 'superadmin').should.not.throw();
-		Role._getAll().should.not.have.properties('superadmin');
-		should(Role._get('superadmin')).be.null;
 	});
 
-	it('parents must be refreshed when parent role is removed', () => {
-		Role._get('root').getParents().should.be.an.Array().which.length(0);
-	});
-	it('additions/removals should be chained', () => {
-		Role._add(new Role('superadmin')).constructor.name.should.be.eql('Role');
-		let instance = Role._get('superadmin').addParents(['anonymous', 'user', 'admin']);
-		instance.constructor.name.should.be.eql('Role');
-		instance.getId().should.be.eql('superadmin');
-		instance = Role._get('superadmin').removeParents(['fake', 'admin']);
-		instance.constructor.name.should.be.eql('Role');
-		instance.getId().should.be.eql('superadmin');
-	});
-	it('can be added as a parent of another role', () => {
-		Role._get('superadmin').getParents().map((parent) => parent.getId()).should.containDeep(['anonymous', 'user']);
-	});
+	it('should be possible to set a list of parents', () => {
+		let anonymous1 = new Role('anonymous1');
+		let anonymous2 = new Role('anonymous2');
 
-	it('can be removed from a child role', () => {
-		Role._get('superadmin').getParents().map((parent) => parent.getId()).should.not.containDeep(['admin']);
-	});
+		acl.addRole(anonymous1).addRole(anonymous2);
 
+		let user = new Role('user', ['anonymous1'], acl);
+		acl.addRole(user);
+		user.setParents(['anonymous2']).getParent('anonymous2').should.be.an.instanceof(Role);
+		user.getParents().should.be.length(1);
+	});
+	it('should be possible to add a parent by its id', () => {
+		let anonymous = new Role('anonymous');
+		let user = new Role('user');
+		acl.addRole(anonymous).addRole(user);
+		user.addParent('anonymous').getParent('anonymous').should.be.an.instanceof(Role);
+	});
+	it('should be possible to add a parent by its instance', () => {
+		let anonymous = new Role('anonymous');
+		let user = new Role('user');
+		acl.addRole(anonymous).addRole(user);
+		user.addParent(anonymous).getParent('anonymous').should.be.an.instanceof(Role);
+	});
+	it('should be possible to add a list of parents', () => {
+		let anonymous = new Role('anonymous');
+		let user = new Role('user');
+		let admin = new Role('admin');
+		acl.addRole(anonymous).addRole(user).addRole(admin);
+		admin.addParents(['anonymous', 'user']);
+		admin.getParent('user').should.be.an.instanceof(Role);
+		admin.getParent('user').getId().should.be.eql('user');
+		admin.getParent('anonymous').should.be.an.instanceof(Role);
+		admin.getParent('anonymous').getId().should.be.eql('anonymous');
+
+	});
+	it('should be possible to remove a parent', () => {
+		let anonymous = new Role('anonymous');
+		let user = new Role('user');
+		let admin = new Role('admin');
+		acl.addRole(anonymous).addRole(user).addRole(admin);
+		admin.addParents(['anonymous', 'user']);
+		admin.removeParent('anonymous');
+		should(admin.getParent('anonymous')).be.null;
+		admin.getParent('user').should.be.instanceof(Role);
+	});
+	it('should be possible to remove a list of parents', () => {
+		let anonymous = new Role('anonymous');
+		let user = new Role('user');
+		let admin = new Role('admin');
+		acl.addRole(anonymous).addRole(user).addRole(admin);
+		admin.addParents(['anonymous', 'user']);
+		admin.removeParents(['anonymous', 'user']);
+		admin.getParents().should.be.length(0);
+	});
 });

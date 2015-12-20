@@ -7,31 +7,37 @@ let _ids = {};
 class Role {
 
 	/**
-	 * Constructor
-	 * @param {string|Object} options - id of this role or an object representing its properties
-	 * @oaram {Array} parents - An array containing all parents ids
-	 *
-	 * @example
-	 * var userRole = new Role({id: 'user'});
-	 * var adminRole = new Role('admin', 'user');
-	 * var supervisor = new Role({id:'supervisor', parents: ['admin']});
-	 *
-	 * @throws {Error} if one of the given parents was not declared before
+	 * Creates a new role and attach it to Acl
+	 * @param {string} id role's id
+	 * @param {Array.<string>|Array.<Role>} parents list of parents
+	 * @param {Acl} acl ACL to which this role will be attached
+	 * @throws {Error} if acl is not an instance of {Acl} or given parents were not declared before
 	 */
-	constructor(options, parents = null) {
-		if (_.isPlainObject(options) && !parents) {
-			this.setId(options.id);
-			this.setParents(options.parents);
-		} else if (_.isString(options) && !parents) {
-			this.setId(options);
-			this.setParents([]);
-		} else if (_.isString(options)) {
-			this.setId(options);
-			this.setParents(parents);
-		} else {
-			throw Error(`Invalid constructor`);
-		}
+	constructor(id, parents = [], acl = null) {
+		this.setId(id);
+		if (acl)
+			this.setAcl(acl);
+		this.setParents(parents);
+	}
 
+	/**
+	 * Sets the ACL to which this role will be attached
+	 *
+	 * @param {Acl} acl
+	 */
+	setAcl(acl) {
+		if (acl.constructor.name != 'Acl')
+			throw new Error(`Provided ACL for role ${this.id} is not an instance of Acl`);
+		this.acl = acl;
+	}
+
+	/**
+	 * Returns the ACL to which this role is attached
+	 *
+	 * @returns {Acl|*}
+	 */
+	getAcl() {
+		return this.acl;
 	}
 
 	/**
@@ -60,161 +66,102 @@ class Role {
 	/**
 	 * Sets role parents.
 	 *
-	 * @param {Array|string|null} parents - Role parents: must be declared as individual roles before
-	 * @returns {Role}
+	 * @param {Array.<string>|Array.<Role>|null} parents - Role parents: must be declared as individual roles before
+	 * @returns {Role} this instance for chaining
 	 * @throws {Error} if one of the given parents was not declared before
 	 */
 	setParents(parents) {
-		let roleParents = parents;
-		Role._checkRoleExist(parents);
-		if (parents == null) {
-			roleParents = [];
-		} else if (_.isString(parents)) {
-			roleParents = [parents];
+		this.parents = [];
+		for (let parent of parents) {
+			this.addParent(parent);
 		}
-		this.parents = roleParents;
 		return this;
 	}
 
 	/**
-	 * Returns an array of parent roles instances
+	 * Returns parents roles of this instance
 	 *
-	 * @returns {Array.<Role>} Array of parent roles
+	 * @returns {Array|Array.<Role>}
 	 */
 	getParents() {
-		return this.parents.map((parentId) => Role._get(parentId));
+		return this.parents;
 	}
 
 	/**
-	 * Returns an instance of parent role
+	 * Get a parent from this role
 	 *
-	 * @param {string} id - Parent id
-	 * @returns {Role|null} - Parent instance or null if id is not a parent of this resource
-	 * @throw {Error} - if id is not a valid Role id
+	 * @param {Role|string} role id or role instance to retrieve
+	 * @returns {Role|null} null if parent role was not found
 	 */
-	getParent(id) {
-		Role._checkRoleExist(id);
-		if (_.indexOf(this.parents, id) > -1) {
-			return _ids[id];
-		}
-		return null;
-	}
-
-	/**
-	 * Add parents to existing list of parents
-	 *
-	 * @param {Array|string|null} parents - Role parents: must be declared as individual roles before
-	 * @returns {Role}
-	 * @throws {Error} if one of the given parents was not declared before
-	 */
-	addParents(parents) {
-		Role._checkRoleExist(parents);
-		let roleParents = parents;
-		if (parents == null) {
-			roleParents = [];
-		} else if (_.isString(parents)) {
-			roleParents = [parents];
-		}
-		this.parents = _.union(this.parents, roleParents);
-		return this;
-	}
-
-	/**
-	 * Remove parents from this role.
-	 *
-	 * @param {Array|string|null|Role} parents - Role parents: must be declared as individual roles before
-	 * @returns {Role}
-	 */
-	removeParents(parents) {
-		let roleParents = parents;
-		if (parents == null) {
-			roleParents = [];
-		} else if (_.isString(parents)) {
-			roleParents = [parents];
-		} else if (parents.constructor.name == 'Role') {
-			roleParents = [parents.getId()];
-		}
-		for (let parent of roleParents) {
-			_.pull(this.parents, parent);
-		}
-		return this;
-	}
-
-	/**
-	 * Returns a registred role represented by its id
-	 * @private
-	 * @param {string} id - of the role to get
-	 * @returns {Role}
-	 */
-	static _get(id) {
-		return _ids[id];
-	}
-
-	/**
-	 * Adds a Role to the list of declared roles
-	 * @private
-	 * @param {Role} role
-	 * @returns {Role} instance added
-	 */
-	static _add(role) {
-		if (role.constructor.name != 'Role')
-			throw Error(`You are trying to add an object that is not an instance of Role`);
-
-		_ids[role.getId()] = role;
-		return _ids[role.getId()];
-	}
-
-	/**
-	 * Deletes role from the list of declared roles
-	 * @private
-	 * @param {Role|string} role
-	 * @returns {string} id of role that have been removed
-	 */
-	static _remove(role) {
+	getParent(role) {
 		let roleId = role;
 		if (role.constructor.name == 'Role')
 			roleId = role.getId();
-		else if (!_.isString(role)) {
-			throw Error(`Cannot remove ${role}: it must be an instance of Role or of type string`);
-		}
+		let parents = this.getParents().filter((parent) => parent.getId() == roleId);
+		if (parents.length)
+			return parents[0];
+		return null;
 
-		_.forEach(_ids, (rl, rlId) => {
-			let parent = rl.getParent(roleId);
-			if (parent) {
-				rl.removeParents(parent);
-			}
-		});
-		delete _ids[roleId];
-
-		return roleId;
 	}
 
 	/**
-	 * Check if all roleIds were added previously
+	 * Add parent to this role. If it already exists in parents list, it will be replaced
 	 *
-	 * @param roleIds
-	 * @private
-	 * @throws Error - if one of roleIds does not exit
+	 * @param {Role|string} role Parent Role instance of its id
+	 * @return {Role} this instance for chaining
+	 * @throws {Error} if no Acl was attached to this role or if parent was not declared previously
 	 */
-	static _checkRoleExist(...roleIds) {
-		let roles = roleIds;
-		if (roleIds.length == 1 & _.isArray(roleIds[0]))
-			roles = roleIds[0];
-		else if (roleIds.length == 1 & _.isString(roleIds[0]))
-			roles = [roleIds[0]];
-		for (let roleId of roles)
-			if (!_ids[roleId])
-				throw new Error(`Role ${roleId} doesn't exist`);
+	addParent(role) {
+		if (this.getAcl() == null)
+			throw new Error(`You must attach an ACL to this role before adding parents`);
+
+		role = this.getAcl().getRole(role);
+		if (!role)
+			throw new Error(`You are trying to add ${role} as parent to ${this.id} but it was not declared previously`);
+		if (this.getParent(role))
+			this.removeParent(role);
+		this.parents.push(role);
+		return this
 	}
 
-	static _getAll() {
-		return _ids;
+	/**
+	 * Add an array of parents role to this instance
+	 *
+	 * @param {Array.<Role>|Array.<string>} roles to add as parents to this instance
+	 * @throws {Error} if no Acl was attached to this role or if one parent was not declared previously
+	 * @return {Role} this instance for chaining
+	 */
+	addParents(roles) {
+		for (let role of roles)
+			this.addParent(role);
+		return this;
 	}
 
-	static _reset() {
-		for (let id of Object.keys(Role._getAll())) {
-			Role._remove(id);
-		}
+	/**
+	 * Remove a parent from the list of this role's parents
+	 *
+	 * @param {Role|string] role Parent role isntance or its role id
+	 * @returns {Role} this instance for chaining
+	 */
+	removeParent(role) {
+		let roleId = role;
+		if (role.constructor.name == 'Role')
+			roleId = role.getId();
+
+		this.parents = this.parents.filter((parent) => parent.getId() != roleId);
+		return this;
+	}
+
+	/**
+	 * Remove a role from parent list
+	 *
+	 * @param {Array.<string>|Array.<Role>} roles to remove from parents list
+	 * @return {Role} this instance for chaining
+	 */
+	removeParents(roles) {
+		for (let role of roles)
+			this.removeParent(role);
+		return this;
 	}
 
 	/**

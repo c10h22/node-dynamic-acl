@@ -11,8 +11,7 @@ describe('Acl', () => {
 		acl = new Acl();
 	});
 	after(()=> {
-		Role._reset();
-		Resource._reset();
+
 	});
 
 	it('should be initialised with no parameters', () => {
@@ -29,15 +28,11 @@ describe('Acl', () => {
 		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.eql('');
 	});
 	describe('Permissions', () => {
-		after(()=> {
-			Role._reset();
-			Resource._reset();
-		});
 
 		let fakeAcl = new Acl();
 		it('should build permissions as expected', ()=> {
-			fakeAcl.addRole(new Role('anonyme'));
-			fakeAcl.addRole(new Role('user', ['anonyme']));
+			fakeAcl.addRole('anonyme');
+			fakeAcl.addRole('user', ['anonyme']);
 			fakeAcl.addResource(new Resource('row1', ['get', 'post']));
 			fakeAcl.addResource(new Resource('row2'));
 			fakeAcl.build();
@@ -79,8 +74,8 @@ describe('Acl', () => {
 		});
 		it('should be possible to allow or deny an array of privilege for a given resource', () => {
 			let fakeAcl = new Acl();
-			fakeAcl.addRole(new Role('anonyme'));
-			fakeAcl.addRole(new Role('user', ['anonyme']));
+			fakeAcl.addRole('anonyme');
+			fakeAcl.addRole('user', ['anonyme']);
 			fakeAcl.addResource(new Resource('row1', ['get', 'post']));
 			fakeAcl.addResource(new Resource('row2'));
 			fakeAcl.build();
@@ -170,13 +165,10 @@ describe('Acl', () => {
 		before(() => {
 			acl = new Acl();
 		});
-		after(()=> {
-			acl = new Acl();
-		});
 
 		it('should use chaning when adding a new role', () => {
-			acl.addRole(new Role('anonyme')).constructor.name.should.be.eql('Acl');
-			acl.roles.should.containEql('anonyme');
+			acl.addRole('anonyme').constructor.name.should.be.eql('Acl');
+			acl.roles.map((role)=>role.getId()).should.containEql('anonyme');
 		});
 		it('should throw an error when trying to add a role that is not an instance of Role', () => {
 			acl.addRole.bind(acl, {}).should.throw(Error);
@@ -200,7 +192,7 @@ describe('Acl', () => {
 		});
 		it('should be possible to add & retrieve a resource', ()=> {
 			acl.addResource(new Resource('table0'));
-			acl.resources.should.containEql('table0');
+			acl.resources.map((resource)=>resource.getId()).should.containEql('table0');
 			let resource = acl.getResource('table0');
 			resource.constructor.name.should.be.eql('Resource');
 			resource.getId().should.be.eql('table0');
@@ -208,7 +200,7 @@ describe('Acl', () => {
 		it('should be possible to remove an added resource by its id', ()=> {
 			acl.removeResource('table0');
 			should(acl.getResource('table0')).be.null;
-			acl.resources.should.not.containEql('table0');
+			acl.resources.map((resource)=>resource.getId()).should.not.containEql('table0');
 		});
 	});
 

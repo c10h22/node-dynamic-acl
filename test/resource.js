@@ -4,22 +4,15 @@ import sinon from 'sinon';
 import {Resource} from '../dist';
 
 describe('Resource', () => {
-	let resource0;
-	let resource1;
-	let resource2;
+	var resource0;
+	var resource1;
+	var resource2;
 	before(() => {
-		Resource._add(new Resource('table0'));
-		Resource._add(new Resource('table1', ['get', 'post']));
-		Resource._add(new Resource('table2', ['get', 'post', '*']));
-		resource0 = Resource._get('table0');
-		resource1 = Resource._get('table1');
-		resource2 = Resource._get('table2');
+		resource0 = new Resource('table0');
+		resource1 = new Resource('table1', ['get', 'post']);
+		resource2 = new Resource('table2', ['get', 'post', '*']);
 	});
-	after(()=> {
-		for (let id of Object.keys(Resource._getAll())) {
-			Resource._remove(id);
-		}
-	});
+
 
 	it('should be possible to add a new Resource identified only by its id', () => {
 		resource0.constructor.name.should.be.eql('Resource');
@@ -74,23 +67,5 @@ describe('Resource', () => {
 		resource0.setPrivileges.bind(resource0, ['patch', 'post']).should.not.throw(Error);
 		resource0.getPrivileges().should.containDeep(['patch', 'post', '*']).and.length(3);
 	});
-	it('should be possible to remove a Resource by its id', () => {
-		Resource._remove('table0');
-		Resource._getAll().should.have.keys(['table1', 'table2']);
-		Resource._getAll().should.not.have.keys('table0');
-		should(Resource._get('table0')).be.null;
-	});
-	it('should be possible to remove a Resource by its instance', ()=> {
-		Resource._remove(resource1);
-		Resource._getAll().should.have.keys(['table2']);
-		Resource._getAll().should.not.have.keys(['table0', 'table1']);
-		should(Resource._get('table1')).be.null;
-	});
-	it('should throw an error when trying to remove a non declared Resource', () => {
-		let resource3 = new Resource('table3');
-		Resource._remove.bind(null, resource3).should.throw(Error);
-		Resource._remove.bind(null, 'table3').should.throw(Error);
-	});
-
 
 });

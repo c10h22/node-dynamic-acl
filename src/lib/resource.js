@@ -96,64 +96,6 @@ class Resource {
 			this.privileges.splice(privilegeIndex, 1);
 		return this;
 	}
-
-
-	/**
-	 * Add a new instance to Resource lists
-	 *
-	 * @param {Resource} resource - a new Resource to add
-	 * @returns {Resource} the new added Resource
-	 * @throws {Error} if resource is not an instance of Resource
-	 * @private
-	 */
-	static _add(resource) {
-		if (resource.constructor.name != 'Resource')
-			throw Error(`You are trying to add an object that is not an instance of Resource`);
-
-		_ids[resource.getId()] = resource;
-		return _ids[resource.getId()];
-	}
-
-	/**
-	 * Deletes a resource from the list
-	 *
-	 * @param {Resource|string} resource - Resource instance to delete
-	 * @returns {string} Resource id that have been removed
-	 * @private
-	 * @throws {Error} if resource is not {Resource|string}
-	 */
-	static _remove(resource) {
-		let resourceId = resource;
-		if (resource.constructor.name == 'Resource')
-			resourceId = resource.getId();
-		else if (!_.isString(resource)) {
-			throw Error(`Cannot remove ${resource}: it must be an instance of Resource or of type string`);
-		}
-		if (!_ids[resourceId])
-			throw Error(`Resource ${resourceId} does not exist`);
-		delete _ids[resourceId];
-		return resourceId;
-	}
-
-	/**
-	 *
-	 * @param {string} id
-	 * @returns {Resource} - Resource identified by id
-	 * @private
-	 */
-	static _get(id) {
-		return _ids[id];
-	}
-
-	static _getAll() {
-		return _ids;
-	}
-
-	static _reset() {
-		for (let id of Object.keys(Resource._getAll())) {
-			Resource._remove(id);
-		}
-	}
 }
 
 export default Resource;

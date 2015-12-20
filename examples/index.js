@@ -44,9 +44,9 @@ var userCanMarkPage = function (user, page) {
 };
 
 var acl = new Acl(getUserRoleId, getResourceId);
-acl.addRole(new Role('visitor'))
-	.addRole(new Role('user', 'visitor'))
-	.addRole(new Role('admin', ['user']))
+acl.addRole('visitor') // equivalent to acl.addRole(new Role('visitor', [], acl))
+	.addRole(new Role('user', ['visitor'], acl))
+	.addRole('admin', ['user']) //equivalent to acl.addRole(new Role('admin', ['user'], acl))
 	.addResource(new Resource('page', ['read', 'mark', 'change title']))
 	.addResource(new Resource('book'))
 	.build();
@@ -58,25 +58,31 @@ acl.allow('visitor', 'page', 'read')
 	.allow('admin', 'page', 'change title')
 	.allow('admin', 'book');
 
+console.log('---built permissions---');
+console.log(acl.getPermissions('visitor'));
+console.log(acl.getPermissions('user'));
+console.log(acl.getPermissions('admin'));
 
-console.log('anonymous isAllowed page1:* ' + acl.isAllowed(anonymous, page1));
-console.log('anonymous isAllowed page1:read ' + acl.isAllowed(anonymous, page1, 'read'));
-console.log('anonymous isAllowed page1:mark ' + acl.isAllowed(anonymous, page1, 'mark'));
-console.log('anonymous isAllowed page1:change title ' + acl.isAllowed(anonymous, page1, 'change title'));
-console.log('anonymous isAllowed book:* ' + acl.isAllowed(anonymous, book));
-console.log('anonymous isAllowed book:sell ' + acl.isAllowed(anonymous, book, 'sell')); 			//privilege was not declared previously -> inherit from book:*
+console.log('---anonymous permissions check---');
+console.log('anonymous isAllowed page1:* ' + acl.isAllowed(anonymous, page1)); // false
+console.log('anonymous isAllowed page1:read ' + acl.isAllowed(anonymous, page1, 'read')); //true
+console.log('anonymous isAllowed page1:mark ' + acl.isAllowed(anonymous, page1, 'mark')); //false
+console.log('anonymous isAllowed page1:change title ' + acl.isAllowed(anonymous, page1, 'change title')); //false
+console.log('anonymous isAllowed book:* ' + acl.isAllowed(anonymous, book)); //false
+console.log('anonymous isAllowed book:sell ' + acl.isAllowed(anonymous, book, 'sell')); //false 			//privilege was not declared previously -> inherit from book:*
 
+console.log('---user permissions check---');
+console.log('bob isAllowed page1:* ' + acl.isAllowed(bob, page1)); //true
+console.log('bob isAllowed page1:read ' + acl.isAllowed(bob, page1, 'read')); //true
+console.log('bob isAllowed page1:mark ' + acl.isAllowed(bob, page1, 'mark')); //false
+console.log('bob isAllowed page1:change title ' + acl.isAllowed(bob, page1, 'change title')); //false
+console.log('bob isAllowed book:* ' + acl.isAllowed(bob, book)); //false
+console.log('bob isAllowed book:sell ' + acl.isAllowed(bob, book, 'sell')); //false 			//privilege was not declared previously -> inherit from book:*
 
-console.log('bob isAllowed page1:* ' + acl.isAllowed(bob, page1));
-console.log('bob isAllowed page1:read ' + acl.isAllowed(bob, page1, 'read'));
-console.log('bob isAllowed page1:mark ' + acl.isAllowed(bob, page1, 'mark'));
-console.log('bob isAllowed page1:change title ' + acl.isAllowed(bob, page1, 'change title'));
-console.log('bob isAllowed book:* ' + acl.isAllowed(bob, book));
-console.log('bob isAllowed book:sell ' + acl.isAllowed(bob, book, 'sell')); 			//privilege was not declared previously -> inherit from book:*
-
-console.log('me isAllowed page1:* ' + acl.isAllowed(me, page1));
-console.log('me isAllowed page1:read ' + acl.isAllowed(me, page1, 'read'));
-console.log('me isAllowed page1:mark ' + acl.isAllowed(me, page1, 'mark'));
-console.log('me isAllowed page1:change title ' + acl.isAllowed(me, page1, 'change title'));
-console.log('me isAllowed book:* ' + acl.isAllowed(me, book));
-console.log('me isAllowed book:sell ' + acl.isAllowed(me, book, 'sell')); 			//privilege was not declared previously -> inherit from book:*
+console.log('---admin permissions check---');
+console.log('me isAllowed page1:* ' + acl.isAllowed(me, page1)); //true
+console.log('me isAllowed page1:read ' + acl.isAllowed(me, page1, 'read')); //true
+console.log('me isAllowed page1:mark ' + acl.isAllowed(me, page1, 'mark')); //true
+console.log('me isAllowed page1:change title ' + acl.isAllowed(me, page1, 'change title')); //true
+console.log('me isAllowed book:* ' + acl.isAllowed(me, book)); // true
+console.log('me isAllowed book:sell ' + acl.isAllowed(me, book, 'sell'));//true 			//privilege was not declared previously -> inherit from book:*
