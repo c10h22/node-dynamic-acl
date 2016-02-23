@@ -1,3 +1,9 @@
+[![npm version](https://badge.fury.io/js/dynamic-acl.svg)](https://badge.fury.io/js/dynamic-acl)
+[![GitHub version](https://badge.fury.io/gh/c10h22%2Fnode-dynamic-acl.svg)](http://badge.fury.io/gh/c10h22%2Fnode-dynamic-acl)
+[![Build Status](https://travis-ci.org/c10h22/graphql-vogels.svg?branch=master)](https://travis-ci.org/c10h22/graphql-vogels)
+[![Coverage Status](https://coveralls.io/repos/github/c10h22/node-dynamic-acl/badge.svg?branch=master)](https://coveralls.io/github/c10h22/node-dynamic-acl?branch=master)
+[![Dependency Status](https://www.versioneye.com/user/projects/56cbd46c18b2710403dfed40/badge.svg?style=flat)](https://www.versioneye.com/user/projects/56cbd46c18b2710403dfed40)
+
 node-dynamic-acl
 ==========
 
