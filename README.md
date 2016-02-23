@@ -1,9 +1,3 @@
-[![npm version](https://badge.fury.io/js/dynamic-acl.svg)](https://badge.fury.io/js/dynamic-acl)
-[![GitHub version](https://badge.fury.io/gh/c10h22%2Fnode-dynamic-acl.svg)](http://badge.fury.io/gh/c10h22%2Fnode-dynamic-acl)
-[![Build Status](https://travis-ci.org/c10h22/graphql-vogels.svg?branch=master)](https://travis-ci.org/c10h22/graphql-vogels)
-[![Coverage Status](https://coveralls.io/repos/github/c10h22/node-dynamic-acl/badge.svg?branch=master)](https://coveralls.io/github/c10h22/node-dynamic-acl?branch=master)
-[![Dependency Status](https://www.versioneye.com/user/projects/56cbd46c18b2710403dfed40/badge.svg?style=flat)](https://www.versioneye.com/user/projects/56cbd46c18b2710403dfed40)
-
 node-dynamic-acl
 ==========
 
@@ -22,165 +16,89 @@ var Role = require('../dist').Role;
 var Resource = require('../dist').Resource;
 
 var anonymous = {
-	roleId: 'visitor'
+roleId: 'visitor'
 };
 var bob = {
-	firstname: 'Bob',
-	lastname: 'Marley',
-	roleId: 'user'
+firstname: 'Bob',
+lastname: 'Marley',
+roleId: 'user'
 };
 
 var me = {
-	firtname: 'Timmmmy',
-	lastname: 'Timmmmy',
-	roleId: 'admin'
+firtname: 'Timmmmy',
+lastname: 'Timmmmy',
+roleId: 'admin'
 };
 
 var page1 = {
-	id: 'page 1',
-	title: 'Go further with node',
-	resourceId: 'page'
+id: 'page 1',
+title: 'Go further with node',
+resourceId: 'page'
 };
 
 var book = {
-	id: 'book 1',
-	title: 'Go further with JS',
-	resourceId: 'book'
+id: 'book 1',
+title: 'Go further with JS',
+resourceId: 'book'
 };
 
-var getUserRoleId = (user) => new Promise(resolve => resolve(user.roleId));
+var getUserRoleId = function (user) {
+return user.roleId;
+};
 
-var getResourceId = (resource) => new Promise(resolve => resolve(resource.resourceId));
+var getResourceId = function (resource) {
+return resource.resourceId;
+};
 
-var userCanMarkPage = (user, page) => new Promise((resolve,reject) => {
-	if (user.firstname == 'Timmmmy')
-		return resolve();
-	return reject();
-});
+var userCanMarkPage = function (user, page) {
+if (user.firstname == 'Timmmmy')
+return true;
+return false;
+};
 
 var acl = new Acl(getUserRoleId, getResourceId);
 acl.addRole('visitor') // equivalent to acl.addRole(new Role('visitor', [], acl))
-	.addRole(new Role('user', ['visitor'], acl))
-	.addRole('admin', ['user']) //equivalent to acl.addRole(new Role('admin', ['user'], acl))
-	.addResource(new Resource('page', ['read', 'mark', 'change title']))
-	.addResource(new Resource('book'))
-	.build();
+.addRole(new Role('user', ['visitor'], acl))
+.addRole('admin', ['user']) //equivalent to acl.addRole(new Role('admin', ['user'], acl))
+.addResource(new Resource('page', ['read', 'mark', 'change title']))
+.addResource(new Resource('book'))
+.build();
 
 acl.allow('visitor', 'page', 'read')
-	.allow('user', 'page')
-	.allow('user', 'page', 'mark', userCanMarkPage)
-	.deny('user', 'page', 'change title')
-	.allow('admin', 'page', 'change title')
-	.allow('admin', 'book');
+.allow('user', 'page')
+.allow('user', 'page', 'mark', userCanMarkPage)
+.deny('user', 'page', 'change title')
+.allow('admin', 'page', 'change title')
+.allow('admin', 'book');
 
-//console.log('---built permissions---');
-//console.log('---visitor---');
-//console.log(acl.getPermissions('visitor'));
-//console.log('---user---');
-//console.log(acl.getPermissions('user'));
-//console.log('---admin---');
-//console.log(acl.getPermissions('admin'));
+console.log('---built permissions---');
+console.log(acl.getPermissions('visitor'));
+console.log(acl.getPermissions('user'));
+console.log(acl.getPermissions('admin'));
 
-//console.log('---anonymous permissions check---');
-acl.isAllowed(anonymous, page1).then(
-	() => {
-		// anonymous should not be allowed
-		console.error('This should not be printed in console');
-	},
-	() => {
-		// anonymous is not allowed
-		console.log('anonymous isAllowed page1:* -> false');
-	}
-);
+console.log('---anonymous permissions check---');
+console.log('anonymous isAllowed page1:* ' + acl.isAllowed(anonymous, page1)); // false
+console.log('anonymous isAllowed page1:read ' + acl.isAllowed(anonymous, page1, 'read')); //true
+console.log('anonymous isAllowed page1:mark ' + acl.isAllowed(anonymous, page1, 'mark')); //false
+console.log('anonymous isAllowed page1:change title ' + acl.isAllowed(anonymous, page1, 'change title')); //false
+console.log('anonymous isAllowed book:* ' + acl.isAllowed(anonymous, book)); //false
+console.log('anonymous isAllowed book:sell ' + acl.isAllowed(anonymous, book, 'sell')); //false            //privilege was not declared previously -> inherit from book:*
 
-acl.isAllowed(anonymous, page1, 'read').then(
-	// anonymous is allowed
-	() => {console.log('anonymous isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
-);
+console.log('---user permissions check---');
+console.log('bob isAllowed page1:* ' + acl.isAllowed(bob, page1)); //true
+console.log('bob isAllowed page1:read ' + acl.isAllowed(bob, page1, 'read')); //true
+console.log('bob isAllowed page1:mark ' + acl.isAllowed(bob, page1, 'mark')); //false
+console.log('bob isAllowed page1:change title ' + acl.isAllowed(bob, page1, 'change title')); //false
+console.log('bob isAllowed book:* ' + acl.isAllowed(bob, book)); //false
+console.log('bob isAllowed book:sell ' + acl.isAllowed(bob, book, 'sell')); //false            //privilege was not declared previously -> inherit from book:*
 
-acl.isAllowed(anonymous, page1, 'mark').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed page1:mark -> false')}
-);
-
-acl.isAllowed(anonymous, page1, 'change title').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed page1:change title -> false')}
-);
-
-acl.isAllowed(anonymous, book).then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed book:* -> false')}
-);
-
-acl.isAllowed(anonymous, book, 'sell').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed book:sell -> false')}
-);
-
-
-//console.log('---user permissions check---');
-acl.isAllowed(bob, page1).then(
-	() => {console.log('bob isAllowed page1:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-
-acl.isAllowed(bob, page1, 'read').then(
-	() => {console.log('bob isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-
-acl.isAllowed(bob, page1, 'mark').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed page1:mark -> false')}
-);
-
-acl.isAllowed(bob, page1, 'change title').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed page1:change title -> false')}
-);
-
-acl.isAllowed(bob, book, 'book:*').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed book:* -> false')}
-);
-
-acl.isAllowed(bob, book, 'book:sell').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed book:sell -> false')}//privilege was not declared previously -> inherit from book:*
-);
-
-//console.log('---admin permissions check---');
-acl.isAllowed(me, page1).then(
-	() => {console.log('me isAllowed page1:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'read').then(
-	() => {console.log('me isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'mark').then(
-	() => {console.log('me isAllowed page1:mark -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'change title').then(
-	() => {console.log('me isAllowed page1:change title -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, book).then(
-	() => {console.log('me isAllowed book:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, book, 'sell').then(
-	() => {console.log('me isAllowed book:sell -> true')},//privilege was not declared previously -> inherit from book:*
-	() => {console.error('This should not be printed in console')}
-);
-
+console.log('---admin permissions check---');
+console.log('me isAllowed page1:* ' + acl.isAllowed(me, page1)); //true
+console.log('me isAllowed page1:read ' + acl.isAllowed(me, page1, 'read')); //true
+console.log('me isAllowed page1:mark ' + acl.isAllowed(me, page1, 'mark')); //true
+console.log('me isAllowed page1:change title ' + acl.isAllowed(me, page1, 'change title')); //true
+console.log('me isAllowed book:* ' + acl.isAllowed(me, book)); // true
+console.log('me isAllowed book:sell ' + acl.isAllowed(me, book, 'sell'));//true            //privilege was not declared previously -> inherit from book:*
 
 
 ```
@@ -194,7 +112,6 @@ This class holds all information about Roles, Resources and Permissions
 
 * [Acl](#Acl)
     * [new Acl(roleIdFetchFunc, resourceIdFetchFunc)](#new_Acl_new)
-    * [new Acl(roleIdFetchFunc, resourceIdFetchFunc)](#new_Acl_new)
     * [.setRoleIdFetchFunc(func)](#Acl+setRoleIdFetchFunc) ⇒ <code>[Acl](#Acl)</code>
     * [.setResourceIdFetchFunc(func)](#Acl+setResourceIdFetchFunc) ⇒ <code>[Acl](#Acl)</code>
     * [.addRole(role, Parents)](#Acl+addRole) ⇒ <code>[Acl](#Acl)</code>
@@ -207,20 +124,10 @@ This class holds all information about Roles, Resources and Permissions
     * [.allow(roleId, resourceId, privilege, condition)](#Acl+allow) ⇒ <code>[Acl](#Acl)</code>
     * [.deny(roleId, resourceId, privilege, condition)](#Acl+deny) ⇒ <code>[Acl](#Acl)</code>
     * [._allowOrDeny(allow, roleId, resourceId, privilege, condition)](#Acl+_allowOrDeny)
-    * [.isAllowed(user, resource, privilege)](#Acl+isAllowed) ⇒ <code>boolean</code>
-    * [.isRoleAllowed(roleId, resourceId, privilege)](#Acl+isRoleAllowed) ⇒ <code>boolean</code>
-    * [.isAnyParentAllowed(roleId, resourceId, privilege)](#Acl+isAnyParentAllowed) ⇒ <code>boolean</code>
+    * [.isAllowed(user, resource, privilege)](#Acl+isAllowed) ⇒ <code>Promise</code>
+    * [.isRoleAllowed(roleId, resourceId, privilege)](#Acl+isRoleAllowed) ⇒ <code>Promise</code>
+    * [.isAnyParentAllowed(roleId, resourceId, privilege)](#Acl+isAnyParentAllowed) ⇒ <code>Promise</code>
     * [.getPermissions(roleId)](#Acl+getPermissions) ⇒ <code>Array.&lt;Object&gt;</code>
-
-<a name="new_Acl_new"></a>
-### new Acl(roleIdFetchFunc, resourceIdFetchFunc)
-Constructor
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| roleIdFetchFunc | <code>[fetchRoleIdFunc](#fetchRoleIdFunc)</code> | function that will let Acl fetch Role id (default will return empty string) |
-| resourceIdFetchFunc | <code>[fetchResourceIdFunc](#fetchResourceIdFunc)</code> | function that will let Acl fetch Resource id (default will return empty string) |
 
 <a name="new_Acl_new"></a>
 ### new Acl(roleIdFetchFunc, resourceIdFetchFunc)
@@ -235,9 +142,9 @@ Constructor
 **Example**  
 ```js
 var myAcl = new Acl(function(user){
-		return user.getRole();
+		return Promise.resolve(user.getRole());
 }, function(resource){
-		return resource.getResourceId();
+		return Promise.resolve(resource.getResourceId());
 });
 ```
 <a name="Acl+setRoleIdFetchFunc"></a>
@@ -380,12 +287,12 @@ Allow User with Role Id to access Privileged Resource (which have Resource Id) u
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 **Returns**: <code>[Acl](#Acl)</code> - this instance for chaining  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> | Role Id or Role instance |
-| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> | Resource Id or Resource instance |
-| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | Privilege (default is '*' all) |
-| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | Conditional permission function (default is null) |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> |  | Role Id or Role instance |
+| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> |  | Resource Id or Resource instance |
+| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | <code>&quot;*&quot;</code> | Privilege (default is '*' all) |
+| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | <code></code> | Conditional permission function (default is null) |
 
 **Example**  
 ```js
@@ -402,12 +309,12 @@ Deny User with Role Id to access Privileged Resource (which have Resource Id) un
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 **Returns**: <code>[Acl](#Acl)</code> - this instance for chaining  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> | Role Id or Role instance |
-| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> | Resource Id or Resource instance |
-| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | Privilege (default is '*' all) |
-| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | Conditional permission function (default is null) |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> |  | Role Id or Role instance |
+| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> |  | Resource Id or Resource instance |
+| privilege | <code>string</code> &#124; <code>Array.&lt;string&gt;</code> | <code>&quot;*&quot;</code> | Privilege (default is '*' all) |
+| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | <code></code> | Conditional permission function (default is null) |
 
 **Example**  
 ```js
@@ -423,25 +330,25 @@ Allow User with Role Id to access Privileged Resource (which have Resource Id) u
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| allow | <code>boolean</code> | true = allowed, false = denied |
-| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> | Role Id or Role instance |
-| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> | Resource Id or Resource instance |
-| privilege | <code>string</code> | Privilege (default is '*' all) |
-| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | Conditional permission function (default is null) |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| allow | <code>boolean</code> |  | true = allowed, false = denied |
+| roleId | <code>string</code> &#124; <code>[Role](#Role)</code> |  | Role Id or Role instance |
+| resourceId | <code>string</code> &#124; <code>[Resource](#Resource)</code> |  | Resource Id or Resource instance |
+| privilege | <code>string</code> | <code>&quot;*&quot;</code> | Privilege (default is '*' all) |
+| condition | <code>[permissionConditionFunc](#permissionConditionFunc)</code> | <code></code> | Conditional permission function (default is null) |
 
 <a name="Acl+isAllowed"></a>
-### acl.isAllowed(user, resource, privilege) ⇒ <code>boolean</code>
+### acl.isAllowed(user, resource, privilege) ⇒ <code>Promise</code>
 Checks if user is allowed to access resource with a given privilege. If yes, it checks condition
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 
-| Param | Type |
-| --- | --- |
-| user | <code>\*</code> | 
-| resource | <code>\*</code> | 
-| privilege | <code>string</code> | 
+| Param | Type | Default |
+| --- | --- | --- |
+| user | <code>\*</code> |  | 
+| resource | <code>\*</code> |  | 
+| privilege | <code>string</code> | <code>&quot;*&quot;</code> | 
 
 **Example**  
 ```js
@@ -449,17 +356,17 @@ acl.isAllowed(userObject, resourceObject, 'read');
 acl.isAllowed(userObject, resourceObject);
 ```
 <a name="Acl+isRoleAllowed"></a>
-### acl.isRoleAllowed(roleId, resourceId, privilege) ⇒ <code>boolean</code>
+### acl.isRoleAllowed(roleId, resourceId, privilege) ⇒ <code>Promise</code>
 Checks if roleId has access to resourceId with privilege. If not, it will check if one of the related parents
 has access to resource id
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
 
-| Param | Type |
-| --- | --- |
-| roleId | <code>string</code> | 
-| resourceId | <code>string</code> | 
-| privilege | <code>string</code> | 
+| Param | Type | Default |
+| --- | --- | --- |
+| roleId | <code>string</code> |  | 
+| resourceId | <code>string</code> |  | 
+| privilege | <code>string</code> | <code>&quot;*&quot;</code> | 
 
 **Example**  
 ```js
@@ -467,7 +374,7 @@ acl.isRoleAllowed('user', 'book', 'read');
 acl.isRoleAllow('user', 'page');
 ```
 <a name="Acl+isAnyParentAllowed"></a>
-### acl.isAnyParentAllowed(roleId, resourceId, privilege) ⇒ <code>boolean</code>
+### acl.isAnyParentAllowed(roleId, resourceId, privilege) ⇒ <code>Promise</code>
 Checks if any role's parents is allowed to access resourceId with privileges
 
 **Kind**: instance method of <code>[Acl](#Acl)</code>  
@@ -501,7 +408,6 @@ Role class
 
 * [Role](#Role)
     * [new Role(id, parents, acl)](#new_Role_new)
-    * [new Role(id, parents, acl)](#new_Role_new)
     * [.setAcl(acl)](#Role+setAcl)
     * [.getAcl()](#Role+getAcl) ⇒ <code>[Acl](#Acl)</code> &#124; <code>\*</code>
     * [.setId(id)](#Role+setId) ⇒ <code>[Role](#Role)</code>
@@ -519,27 +425,16 @@ Role class
 ### new Role(id, parents, acl)
 Creates a new role and attach it to Acl
 
-
-| Param | Type | Description |
-| --- | --- | --- |
-| id | <code>string</code> | role's id |
-| parents | <code>Array.&lt;string&gt;</code> &#124; <code>[Array.&lt;Role&gt;](#Role)</code> | list of parents |
-| acl | <code>[Acl](#Acl)</code> | ACL to which this role will be attached |
-
-<a name="new_Role_new"></a>
-### new Role(id, parents, acl)
-Creates a new role and attach it to Acl
-
 **Throws**:
 
 - <code>Error</code> if acl is not an instance of {Acl} or given parents were not declared before
 
 
-| Param | Type | Description |
-| --- | --- | --- |
-| id | <code>string</code> | role's id |
-| parents | <code>Array.&lt;string&gt;</code> &#124; <code>[Array.&lt;Role&gt;](#Role)</code> | list of parents |
-| acl | <code>[Acl](#Acl)</code> | ACL to which this role will be attached |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| id | <code>string</code> |  | role's id |
+| parents | <code>Array.&lt;string&gt;</code> &#124; <code>[Array.&lt;Role&gt;](#Role)</code> |  | list of parents |
+| acl | <code>[Acl](#Acl)</code> | <code></code> | ACL to which this role will be attached |
 
 <a name="Role+setAcl"></a>
 ### role.setAcl(acl)
@@ -669,6 +564,7 @@ Returns
 	<a name="Resource"></a>
 ## Resource
 **Kind**: global class  
+**Trows**: <code>Error</code> if privileges is not an Array of strings  
 
 * [Resource](#Resource)
     * [new Resource(id, privileges)](#new_Resource_new)

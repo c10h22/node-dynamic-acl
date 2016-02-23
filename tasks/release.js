@@ -8,6 +8,8 @@ var gulp = require('gulp'),
 	util = require('gulp-util'),
 	excludeGitignore = require('gulp-exclude-gitignore'),
 	fs = require('fs'),
+	concat = require('gulp-concat'),
+	gulpJsdoc2md = require('gulp-jsdoc-to-markdown'),
 	conventionalChangelog = require('gulp-conventional-changelog'),
 	join = require('path').join;
 /**
@@ -82,9 +84,9 @@ gulp.task('tag:patch', ['commit:patch'], tag);
 gulp.task('tag:feature', ['commit:feature'], tag);
 gulp.task('tag:release', ['commit:release'], tag);
 
-gulp.task('commit:patch', ['patch', 'changelog:patch'], commit);
-gulp.task('commit:feature', ['feature', 'changelog:feature'], commit);
-gulp.task('commit:release', ['release', 'changelog:release'], commit);
+gulp.task('commit:patch', ['patch', 'changelog:patch', 'docs'], commit);
+gulp.task('commit:feature', ['feature', 'changelog:feature', 'docs'], commit);
+gulp.task('commit:release', ['release', 'changelog:release', 'docs'], commit);
 
 gulp.task('push:patch', ['tag:patch'], push);
 gulp.task('push:feature', ['tag:feature'], push);
@@ -98,4 +100,14 @@ gulp.task('feature', function () {
 });
 gulp.task('release', function () {
 	return inc('major');
+});
+
+gulp.task('docs', function () {
+	return gulp.src('src/**/*.js')
+		.pipe(concat('README.md'))
+		.pipe(gulpJsdoc2md({template: fs.readFileSync('./template.hbs', 'utf8')}))
+		.on('error', function (err) {
+			gutil.log('jsdoc2md failed:', err.message)
+		})
+		.pipe(gulp.dest('./'))
 });
