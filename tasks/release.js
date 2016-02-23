@@ -8,10 +8,8 @@ var gulp = require('gulp'),
 	util = require('gulp-util'),
 	excludeGitignore = require('gulp-exclude-gitignore'),
 	fs = require('fs'),
-	concat = require('gulp-concat'),
-	gulpJsdoc2md = require('gulp-jsdoc-to-markdown'),
-	conventionalChangelog = require('gulp-conventional-changelog');
-
+	conventionalChangelog = require('gulp-conventional-changelog'),
+	join = require('path').join;
 /**
  * Bumping version number and tagging the repository with it.
  * Please read http://semver.org/
@@ -47,31 +45,38 @@ function commit() {
 		.pipe(git.commit(message));
 }
 
+function push(){
+	return git.push('origin', 'master', {args:'--tags -f'});
+}
+
 function tag() {
 	return gulp.src(['./package.json']).pipe(tag_version());
 }
 
-gulp.task('changelog', function () {
-
-});
+gulp.task('changelog', changelog);
 var getPackageJson = function () {
 	return JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 };
-
 function changelog() {
 	return gulp.src('CHANGELOG.md', {
 			buffer: false
 		})
 		.pipe(conventionalChangelog({
-			preset: 'eslint',
-			releaseCount: 0
+			preset: 'angular',
+			releaseCount: 0,
+			verbose: true
+		}, null, null, null, {
+			//mainTemplate: fs.readFileSync(join(__dirname, 'changelog/template.hbs'), 'utf-8'),
+			headerPartial: fs.readFileSync(join(__dirname, 'changelog/header.hbs'), 'utf-8'),
+			commitPartial: fs.readFileSync(join(__dirname, 'changelog/commit.hbs'), 'utf-8'),
 		}))
+
 		.pipe(gulp.dest('./'));
 }
 
-gulp.task('changelog:patch', ['patch', 'docs'], changelog);
-gulp.task('changelog:feature', ['feature', 'docs'], changelog);
-gulp.task('changelog:release', ['release', 'docs'], changelog);
+gulp.task('changelog:patch', ['patch'], changelog);
+gulp.task('changelog:feature', ['feature'], changelog);
+gulp.task('changelog:release', ['release'], changelog);
 
 gulp.task('tag:patch', ['commit:patch'], tag);
 gulp.task('tag:feature', ['commit:feature'], tag);
@@ -80,6 +85,10 @@ gulp.task('tag:release', ['commit:release'], tag);
 gulp.task('commit:patch', ['patch', 'changelog:patch'], commit);
 gulp.task('commit:feature', ['feature', 'changelog:feature'], commit);
 gulp.task('commit:release', ['release', 'changelog:release'], commit);
+
+gulp.task('push:patch', ['tag:patch'], push);
+gulp.task('push:feature', ['tag:feature'], push);
+gulp.task('push:release', ['tag:release'], push);
 
 gulp.task('patch', function () {
 	return inc('patch');
@@ -90,14 +99,3 @@ gulp.task('feature', function () {
 gulp.task('release', function () {
 	return inc('major');
 });
-
-gulp.task('docs', function () {
-	return gulp.src('src/**/*.js')
-		.pipe(concat('README.md'))
-		.pipe(gulpJsdoc2md({template: fs.readFileSync('./template.hbs', 'utf8')}))
-		.on('error', function (err) {
-			gutil.log('jsdoc2md failed:', err.message)
-		})
-		.pipe(gulp.dest('./'))
-});
-

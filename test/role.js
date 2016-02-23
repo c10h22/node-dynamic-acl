@@ -18,7 +18,8 @@ describe('Roles', () => {
 
 	it('should no throw an error if declared using id, parents and acl', () => {
 		let anonymous = new Role('anonymous');
-		acl.addRole(anonymous);
+		let instance = acl.addRole(anonymous);
+		instance.should.be.instanceof(Acl);
 		((roleId, parents, acl) =>  new Role(roleId, parents, acl)).bind(null, 'user', ['anonymous'], acl).should.not.throw();
 		((roleId, parents, acl) =>  new Role(roleId, parents, acl)).bind(null, 'user', [anonymous], acl).should.not.throw();
 

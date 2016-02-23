@@ -3,19 +3,21 @@ import Role from './role';
 import Resource from './resource';
 
 /**
- * Function that will let ACL retrieve the user's "Role id"
+ * Function that will let ACL retrieve the user's "Role id". This function must return a Promise
  *
  * @name fetchRoleIdFunc
  * @function
  * @param {*} user - User which Acl should retrieve Id
+ * @return {Promise}
  */
 
 /**
- * Function that will let ACL retrieve the resource's "Resource id"
+ * Function that will let ACL retrieve the resource's "Resource id". This function must return a Promise
  *
  * @name fetchResourceIdFunc
  * @function
  * @param {*} resource - Resource which Acl should retrieve Id
+ * @return {Promise}
  */
 
 /**
@@ -25,6 +27,7 @@ import Resource from './resource';
  * @function
  * @param {*} user - User which will try to access the resource
  * @param {*} resource - Resource which will be accessed
+ * @return {Promise}
  */
 
 /**
@@ -35,15 +38,15 @@ class Acl {
 	 * Constructor
 	 * @example
 	 * var myAcl = new Acl(function(user){
-	 * 		return user.getRole();
+	 * 		return Promise.resolve(user.getRole());
 	 * }, function(resource){
-	 * 		return resource.getResourceId();
+	 * 		return Promise.resolve(resource.getResourceId());
 	 * });
 	 *
 	 * @param {fetchRoleIdFunc} roleIdFetchFunc - function that will let Acl fetch Role id (default will return empty string)
 	 * @param {fetchResourceIdFunc} resourceIdFetchFunc - function that will let Acl fetch Resource id (default will return empty string)
 	 */
-	constructor(roleIdFetchFunc = ()=>'', resourceIdFetchFunc = () => '') {
+	constructor(roleIdFetchFunc = ()=>new Promise(resolve => resolve('')), resourceIdFetchFunc = ()=>new Promise(resolve => resolve(''))) {
 		this.setRoleIdFetchFunc(roleIdFetchFunc);
 		this.setResourceIdFetchFunc(resourceIdFetchFunc);
 		this.roles = [];
@@ -87,12 +90,15 @@ class Acl {
 	 * acl.addRole(new Role('admin', ['user'], acl));
 	 * acl.addRole('super', [new Role('normal', [], acl)]);
 	 *
+	 *
 	 * @param {Role|string} role instance to add
 	 * @param {Array.<string>|Array.<Role>} Parents default is empty array
 	 * @returns {Acl} this instanc@e for chaining
 	 * @throws {Error} if role is not an instance of {@link Role} or a string
 	 */
+
 	addRole(role, parents = []) {
+		/* istanbul ignore else  */
 		if (_.isString(role))
 			role = new Role(role, parents, this);
 
@@ -100,6 +106,7 @@ class Acl {
 			this.roles.push(role);
 		else
 			throw new Error(`${role} is not a string nor an instance of Role so I can't add it`);
+		/* istanbul ignore else  */
 		if (role.getAcl() == null)
 			role.setAcl(this);
 		return this;
@@ -344,37 +351,54 @@ class Acl {
 	 * @param user {*}
 	 * @param resource {*}
 	 * @param privilege {string}
-	 * @returns {boolean}
+	 * @returns {Promise}
 	 */
 	isAllowed(user, resource, privilege = '*') {
 		let roleId = this._getRoleIdFunc(user);
 		let resourceId = this._getResourceIdFunc(resource);
 
-		if (!_.isString(roleId)) {
-			console.error(`got roleId not a string: ${roleId}`);
-			return false;
-		}
-		if (!_.isString(resourceId)) {
-			console.error(`got resourceId not a string: ${roleId}`);
-			return false;
-		}
-		if (!this.permissions[roleId]) {
-			console.warn(`${roleId} was not declared so I will answer that he is not allowed`);
-			return false;
-		}
-		if (!this.permissions[roleId][resourceId]) {
-			console.warn(`${resourceId} was not declared so I will answer that user is not allowed to this`);
-			return false;
-		}
-		if (!this.permissions[roleId][resourceId][privilege] && privilege != '*') {
-			return this.isRoleAllowed(roleId, resourceId, '*');
-		}
+		return Promise.all([roleId, resourceId]).then(
+			(ids) => {
+				let roleId = ids[0];
+				let resourceId = ids[1];
+				if (!_.isString(roleId)) {
+					console.error(`got roleId not a string: ${roleId}`);
+					return Promise.reject();
+				}
+				if (!_.isString(resourceId)) {
+					console.error(`got resourceId not a string: ${roleId}`);
+					return Promise.reject();
+				}
+				if (!this.permissions[roleId]) {
+					console.warn(`${roleId} was not declared so I will answer that he is not allowed`);
+					return Promise.reject();
+				}
+				if (!this.permissions[roleId][resourceId]) {
+					console.warn(`${resourceId} was not declared so I will answer that user is not allowed to this`);
+					return Promise.reject();
+				}
+				if (!this.permissions[roleId][resourceId][privilege] && privilege != '*') {
+					return this.isRoleAllowed(roleId, resourceId, '*');
+				}
 
-		if (_.isFunction(this.permissions[roleId][resourceId][privilege].condition))
-			return this.isRoleAllowed(roleId, resourceId, privilege) && this.permissions[roleId][resourceId][privilege].condition(user, resource, privilege);
-		else
-			return this.isRoleAllowed(roleId, resourceId, privilege);
+				if (_.isFunction(this.permissions[roleId][resourceId][privilege].condition))
+					return this.isRoleAllowed(roleId, resourceId, privilege).then(
+						() => {
+							console.error('allowed, now checking condition');
+							return this.permissions[roleId][resourceId][privilege].condition(user, resource, privilege)
+						},
+						() => {
 
+							return Promise.reject();
+						}
+					);
+				else
+					return this.isRoleAllowed(roleId, resourceId, privilege);
+			},
+			() => {
+				console.log('Errrroorrr');
+			}
+		)
 	}
 
 	/**
@@ -388,16 +412,16 @@ class Acl {
 	 * @param {string} roleId
 	 * @param {string}resourceId
 	 * @param {string} privilege
-	 * @returns {boolean}
+	 * @returns {Promise}
 	 */
 	isRoleAllowed(roleId, resourceId, privilege = '*') {
 		if (!_.isString(roleId)) {
 			console.warn(`got roleId not a string: ${roleId}`);
-			return false;
+			return Promise.reject();
 		}
 		if (!_.isString(resourceId)) {
 			console.warn(`got resourceId not a string: ${roleId}`);
-			return false;
+			return Promise.reject();
 		}
 		if (!this.permissions[roleId][resourceId][privilege] && privilege != '*') {
 			return this.isRoleAllowed(roleId, resourceId, '*');
@@ -406,7 +430,7 @@ class Acl {
 		if (allowed == null) //check parents if it was not defined how this role has access to this resource
 			return this.isAnyParentAllowed(roleId, resourceId, privilege);
 		else
-			return allowed;
+			return allowed?Promise.resolve():Promise.reject();
 	}
 
 	/**
@@ -415,17 +439,32 @@ class Acl {
 	 * @param {string} roleId
 	 * @param {string} resourceId
 	 * @param {string} privilege
-	 * @returns {boolean}
+	 * @returns {Promise}
 	 */
 	isAnyParentAllowed(roleId, resourceId, privilege) {
-		let role = this.getRole(roleId);
-		let parents = role.getParents();
-		for (let parent of parents) {
-			if (this.isRoleAllowed(parent.getId(), resourceId, privilege))
-				return true;
-		}
-		return false;
+		return new Promise((resolve, reject) => {
+			let role = this.getRole(roleId);
+			let parents = role.getParents();
+			let checks = parents.map(parent => this.isRoleAllowed(parent.getId(), resourceId, privilege).then(
+				()=>{
+					return true;
+				},
+				()=>{
+					return false;
+				}
+			));
 
+			Promise.all(checks).then(
+				(results) => {
+					for(let result of results){
+						if(result)
+							resolve();
+					}
+					reject();
+				}
+			)
+
+		});
 	}
 
 	/**

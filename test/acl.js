@@ -19,13 +19,38 @@ describe('Acl', () => {
 	});
 	it('role Id and resource Id must be empty if no fetch Ids functions are passed in constructor ', () => {
 		let fakeAcl = new Acl();
-		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.eql('');
-		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.eql('');
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.a.Promise;
+		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.a.Promise;
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.finally.equal('');
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.finally.equal('');
 	});
 	it('role Id must be retrieved as specified in roleIdFetchFunc', () => {
-		let fakeAcl = new Acl((user)=>user.roleId);
-		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.eql('user');
-		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.eql('');
+		let fakeAcl = new Acl(
+			(user) => new Promise(resolve => resolve(user.roleId))
+		);
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.a.Promise;
+		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.a.Promise;
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.finally.equal('user');
+		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.finally.equal('');
+	});
+
+	it('resource Id must be retrieved as specified in resourceIdFetchFunc', () => {
+		let fakeAcl = new Acl(
+			(user) => new Promise(resolve => resolve(user.roleId)),
+			(resource) => new Promise(resolve => resolve(user.resourceId))
+		);
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.a.Promise;
+		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.a.Promise;
+		fakeAcl._getRoleIdFunc({roleId: 'user'}).should.be.finally.equal('user');
+		fakeAcl._getResourceIdFunc({resourceId: 'table'}).should.be.finally.equal('table');
+	});
+
+	it('should throw error if trying to set an non function as ResourceIdFetchFunc', () => {
+		let fakeAcl = new Acl(
+			(user) => new Promise(resolve => resolve(user.roleId)),
+			(resource) => new Promise(resolve => resolve(user.resourceId))
+		);
+		fakeAcl.setResourceIdFetchFunc.bind(fakeAcl,{}).should.throw(Error);
 	});
 	describe('Permissions', () => {
 
@@ -67,7 +92,7 @@ describe('Acl', () => {
 
 
 			fakeAcl.allow.bind(fakeAcl, 'anonyme', 'row1', 'get', function () {
-				return true;
+				return Promise.resolve();
 			}).should.not.throw(Error);
 
 
@@ -81,10 +106,10 @@ describe('Acl', () => {
 			fakeAcl.build();
 
 			fakeAcl.allow.bind(fakeAcl, 'anonyme', 'row1', ['get', 'post'], function () {
-				return true;
+				return Promise.resolve();
 			}).should.not.throw(Error);
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: true});
-			fakeAcl.permissions['anonyme']['row1']['post'].condition().should.be.eql(true);
+			fakeAcl.permissions['anonyme']['row1']['post'].condition().should.be.a.Promise;
 
 			fakeAcl.deny.bind(fakeAcl, 'anonyme', 'row1', ['post', 'get']).should.not.throw(Error);
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: false});
@@ -93,12 +118,15 @@ describe('Acl', () => {
 		});
 		it('should allow only given permissions', () => {
 			fakeAcl.permissions['anonyme']['row1']['get'].should.be.containEql({allowed: true});
-			fakeAcl.permissions['anonyme']['row1']['get'].condition().should.be.eql(true);
+			fakeAcl.permissions['anonyme']['row1']['get'].condition().should.be.a.Promise;
+			fakeAcl.permissions['anonyme']['row1']['get'].condition().should.be.fulfilled();
 
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.eql({allowed: null, condition: null});
 			fakeAcl.permissions['anonyme']['row1']['*'].should.be.eql({allowed: null, condition: null});
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.eql(true);
-			fakeAcl.isAnyParentAllowed('user', 'row1', 'get').should.be.eql(true);
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.a.Promise;
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.fulfilled();
+			fakeAcl.isAnyParentAllowed('user', 'row1', 'get').should.be.a.Promise;
+			fakeAcl.isAnyParentAllowed('user', 'row1', 'get').should.be.fulfilled();
 		});
 
 		it('should deny only given permissions', () => {
@@ -106,19 +134,22 @@ describe('Acl', () => {
 
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: false});
 			should(fakeAcl.permissions['anonyme']['row1']['post'].condition).be.null;
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.eql(false);
+
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.a.Promise;
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.a.rejected();
 
 			fakeAcl.permissions['anonyme']['row1']['*'].should.be.eql({allowed: null, condition: null});
 		});
 
-		it('children must be independant form parent if a specific rule is applied', ()=> {
+		it('children must be independent form parent if a specific rule is applied', ()=> {
 			fakeAcl.allow('user', 'row1', 'post');
 			fakeAcl.permissions['user']['row1']['post'].should.be.containEql({allowed: true});
-			fakeAcl.isRoleAllowed('user', 'row1', 'post').should.be.eql(true);
+			fakeAcl.isRoleAllowed('user', 'row1', 'post').should.be.fulfilled();
 		});
+
 		it('children must be inherit form parent if no specific rule is applied', () => {
 			fakeAcl.permissions['user']['row1']['get'].should.be.containEql({allowed: null});
-			fakeAcl.isRoleAllowed('user', 'row1', 'get').should.be.eql(true);
+			fakeAcl.isRoleAllowed('user', 'row1', 'get').should.be.fulfilled();
 		});
 
 		it('should deny all privileges if not specified', () => {
@@ -127,10 +158,10 @@ describe('Acl', () => {
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: false});
 			fakeAcl.permissions['anonyme']['row1']['*'].should.be.containEql({allowed: false});
 
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.eql(false);
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.eql(false);
-			fakeAcl.isRoleAllowed('anonyme', 'row1', '*').should.be.eql(false);
-			fakeAcl.isRoleAllowed('anonyme', 'row1').should.be.eql(false);
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.rejected();
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.rejected();
+			fakeAcl.isRoleAllowed('anonyme', 'row1', '*').should.be.rejected();
+			fakeAcl.isRoleAllowed('anonyme', 'row1').should.be.rejected();
 		});
 		it('should allow all privileges if not specified', () => {
 			fakeAcl.allow('anonyme', 'row1');
@@ -138,27 +169,27 @@ describe('Acl', () => {
 			fakeAcl.permissions['anonyme']['row1']['post'].should.be.containEql({allowed: true});
 			fakeAcl.permissions['anonyme']['row1']['*'].should.be.containEql({allowed: true});
 
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.eql(true);
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.eql(true);
-			fakeAcl.isRoleAllowed('anonyme', 'row1', '*').should.be.eql(true);
-			fakeAcl.isRoleAllowed('anonyme', 'row1').should.be.eql(true);
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'get').should.be.fulfilled();
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'post').should.be.fulfilled();
+			fakeAcl.isRoleAllowed('anonyme', 'row1', '*').should.be.fulfilled();
+			fakeAcl.isRoleAllowed('anonyme', 'row1').should.be.fulfilled();
 		});
 		it('should look to * privilege if privilege does not exist', () => {
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'create').should.be.eql(true);
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'create').should.be.fulfilled();
 			fakeAcl.deny('anonyme', 'row1');
-			fakeAcl.isRoleAllowed('anonyme', 'row1', 'create').should.be.eql(false);
+			fakeAcl.isRoleAllowed('anonyme', 'row1', 'create').should.be.rejected();
 		});
 		it('should use conditional access if specified', () => {
-			fakeAcl.setResourceIdFetchFunc((resource) => resource.id);
-			fakeAcl.setRoleIdFetchFunc((user) => user.role);
+			fakeAcl.setResourceIdFetchFunc((resource) => new Promise(resolve => resolve(resource.id)));
+			fakeAcl.setRoleIdFetchFunc((user) => new Promise(resolve => resolve(user.role)));
 
 			let user = {role: 'anonyme'};
 			let resource = {id: 'row1'};
 
-			fakeAcl.allow('anonyme', 'row1', 'get', () => true);
-			fakeAcl.isAllowed(user, resource, 'get').should.be.eql(true);
-			fakeAcl.allow('anonyme', 'row1', 'get', () => false);
-			fakeAcl.isAllowed(user, resource, 'get').should.be.eql(false);
+			fakeAcl.allow('anonyme', 'row1', 'get', () => Promise.resolve());
+			fakeAcl.isAllowed(user, resource, 'get').should.be.fulfilled();
+			fakeAcl.allow('anonyme', 'row1', 'get', () => Promise.reject());
+			fakeAcl.isAllowed(user, resource, 'get').should.be.rejected();
 		});
 	});
 	describe('Roles', () => {

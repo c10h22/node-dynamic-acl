@@ -7,6 +7,9 @@ import {spawn} from 'child_process';
 import rename from 'gulp-rename';
 import mocha from 'gulp-mocha';
 import gutil from 'gulp-util';
+import istanbul from 'gulp-istanbul';
+import isparta from 'isparta';
+import { Instrumenter } from 'isparta';
 
 var node;
 
@@ -77,10 +80,25 @@ gulp.task('clean', ['clean:dist', 'clean:test']);
  *$ gulp mocha
  * description: runs unit tests
  * */
-gulp.task('mocha', ['babel:test'], () => {
+gulp.task('mocha', ['pre-test', 'babel:test'], () => {
 	return gulp.src([paths.test.run], {read: false})
 		.pipe(mocha({reporter: 'spec'}))
+		// Creating the reports after tests ran
+		//.pipe(istanbul.writeReports())
+		//// Enforce a coverage of at least 90%
+		//.pipe(istanbul.enforceThresholds({ thresholds: { global: 90 } }))
 		.on('error', gutil.log);
+});
+
+gulp.task('pre-test', function () {
+	return gulp.src(['src/**/*.js'])
+		// Covering files
+		.pipe(istanbul({ // Covering files
+			instrumenter: Instrumenter,
+			includeUntested: true
+		}))
+		// Force `require` to return covered files
+		.pipe(istanbul.hookRequire());
 });
 
 /**

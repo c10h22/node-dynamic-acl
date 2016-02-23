@@ -1,0 +1,8 @@
+*{{#if scope}} **{{scope}}:**{{/if}} {{#if subject}}{{subject}}{{else}}{{header}}{{/if}}
+
+{{~!-- commit hash --}}
+{{#if @root.linkReferences}}
+    ([{{hash}}]({{#if @root.host}}{{@root.host}}/{{/if}}{{#if @root.owner}}{{@root.owner}}/{{/if}}{{@root.repository}}/{{@root.commit}}/{{hash}})){{else}}{{hash~}}{{/if}}
+
+{{~!-- commit references --}}{{#if references}}, closes{{~#each references}} {{#if @root.linkReferences}}
+    [{{#if this.owner}}{{this.owner}}/{{/if}}{{this.repository}}#{{this.issue}}]({{#if @root.host}}https://github.com/c10h22/{{this.repository}}/issues/{{this.repository}}-{{this.issue}}{{/if}}/){{/if}}{{/each}}{{/if}}
