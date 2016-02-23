@@ -20,7 +20,9 @@
     "prepublish": "gulp",
     "test": "gulp mocha"
   },
-  "dependencies": {},
+  "dependencies": {
+    "lodash": "^4.5.1"
+  },
   "devDependencies": {
     "babel-cli": "^6.5.1",
     "babel-core": "^6.3.15",
