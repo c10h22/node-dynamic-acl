@@ -384,7 +384,6 @@ class Acl {
 				if (_.isFunction(this.permissions[roleId][resourceId][privilege].condition))
 					return this.isRoleAllowed(roleId, resourceId, privilege).then(
 						() => {
-							console.error('allowed, now checking condition');
 							return this.permissions[roleId][resourceId][privilege].condition(user, resource, privilege)
 						},
 						() => {
