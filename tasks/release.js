@@ -99,6 +99,6 @@ gulp.task('docs', () => gulp.src('src/**/*.js')
   .pipe(concat('README.md'))
   .pipe(gulpJsdoc2md({ template: fs.readFileSync('./template.hbs', 'utf8') }))
   .on('error', (err) => {
-    gutil.log('jsdoc2md failed:', err.message);
+    gutil.log('jsdoc2md failed:', err);
   })
   .pipe(gulp.dest('./')));
