@@ -395,11 +395,10 @@ class Acl {
    * @returns {Promise}
    */
   isAllowed(user, resource, privilege = '*') {
-    const roleId = this._getRoleIdFunc(user);
-    const resourceId = this._getResourceIdFunc(resource);
 
-    return Promise.all([roleId, resourceId]).then(
-      () => {
+    return Promise.all([this._getRoleIdFunc(user), this._getResourceIdFunc(resource)]).then(
+      (result) => {
+        const [roleId, resourceId] = result;
         if (!_.isString(roleId)) {
           debug(`got roleId not a string: ${roleId}`);
           return Promise.reject();
