@@ -1,0 +1,38 @@
+{
+  "extends": "airbnb-base",
+  "plugins": [
+    "mocha"
+  ],
+  "rules": {
+    "no-underscore-dangle": [
+      1,
+      {
+        "allowAfterThis": true
+      }
+    ],
+    "no-trailing-spaces": [
+      1,
+      {
+        "skipBlankLines": true
+      }
+    ],
+    "mocha/no-exclusive-tests": "error",
+    "mocha/valid-suite-description": [
+      1,
+      "^[A-Z]"
+    ],
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": true
+      }
+    ],
+    "eqeqeq": [
+      "error",
+      "allow-null"
+    ]
+  },
+  "env": {
+    "mocha": true
+  }
+}

@@ -8,6 +8,10 @@ Dynamic Access Control List for Node.js to fully control your Roles, Resources, 
 $ npm install dynamic-acl
 ```
 
+```
+$ yarn add dynamic-acl
+```
+
 #Quick Start
 
 ```javascript
@@ -175,6 +179,9 @@ acl.isAllowed(me, book, 'sell').then(
 () => {console.error('This should not be printed in console')}
 );
 ```
+# Debug
+
+Use ``$ DEBUG=node-dynamic-acl:* node example.js`` to view debug messages
 
 #API Reference
 {{#class name="Acl"}}
