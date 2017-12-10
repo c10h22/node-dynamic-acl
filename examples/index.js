@@ -1,164 +1,103 @@
-var Acl = require('../dist').Acl;
-var Role = require('../dist').Role;
-var Resource = require('../dist').Resource;
+const { Acl, Role, Resource } = require('../dist/');
 
-var anonymous = {
-	roleId: 'visitor'
+// Define how we retrieve user role id
+const getUserRoleId = async user => (user.roleId ? user.roleId : 'visitor');
+// Define how we retrieve resource id
+const getResourceId = async resource => resource.resourceId;
+// Create ACL instance
+const acl = new Acl(getUserRoleId, getResourceId);
+
+acl.addRole('visitor')
+  .addRole(new Role('user', ['visitor'], acl))
+  .addRole('admin', ['user'])
+  .addResource(new Resource('book'))
+  .addResource(new Resource('page', ['read', 'write', 'update', 'delete']))
+  .build();
+
+// Allow visitor(Role) to read(Permission) Page (Resource)
+acl.allow('visitor', 'page', 'read');
+// Allow user(Role) to write(Permission) Page(Resource)
+acl.allow('user', 'page', 'write');
+
+// Define dynamic authorisation depending on user and resource
+const userCanUpdatePage = async (user, page) => {
+  if (user.id === 1 && page.id === 'page 1') {
+    return Promise.resolve();
+  }
+  return Promise.reject();
 };
-var bob = {
-	firstname: 'Bob',
-	lastname: 'Marley',
-	roleId: 'user'
+// user(Role) will have update(Permission) on page(Resource) if and only if userCanUpdatePage
+// is fulfilled
+acl.allow('user', 'page', 'update', userCanUpdatePage);
+// user(Role) will not have to right to delete(Permission) page (Resource)
+acl.deny('user', 'page', 'delete');
+// Give admin(Role) all Permissions on page and book (Resources)
+acl.allow('admin', 'page')
+  .allow('admin', 'book');
+
+const anonymousUser = {};
+
+const loggedUser = {
+  id: 1,
+  roleId: 'user',
+};
+const adminUser = {
+  id: 2,
+  roleId: 'admin',
 };
 
-var me = {
-	firtname: 'Timmmmy',
-	lastname: 'Timmmmy',
-	roleId: 'admin'
+const page1Resource = {
+  resourceId: 'page',
+  id: 'page 1',
 };
 
-var page1 = {
-	id: 'page 1',
-	title: 'Go further with node',
-	resourceId: 'page'
+const page2Resource = {
+  resourceId: 'page',
+  id: 'page 2',
 };
 
-var book = {
-	id: 'book 1',
-	title: 'Go further with JS',
-	resourceId: 'book'
+const bookResource = {
+  resourceId: 'book',
 };
 
-var getUserRoleId = (user) => new Promise(resolve => resolve(user.roleId));
-
-var getResourceId = (resource) => new Promise(resolve => resolve(resource.resourceId));
-
-var userCanMarkPage = (user, page) => new Promise((resolve,reject) => {
-	if (user.firstname == 'Timmmmy')
-		return resolve();
-	return reject();
-});
-
-var acl = new Acl(getUserRoleId, getResourceId);
-acl.addRole('visitor') // equivalent to acl.addRole(new Role('visitor', [], acl))
-	.addRole(new Role('user', ['visitor'], acl))
-	.addRole('admin', ['user']) //equivalent to acl.addRole(new Role('admin', ['user'], acl))
-	.addResource(new Resource('page', ['read', 'mark', 'change title']))
-	.addResource(new Resource('book'))
-	.build();
-
-acl.allow('visitor', 'page', 'read')
-	.allow('user', 'page')
-	.allow('user', 'page', 'mark', userCanMarkPage)
-	.deny('user', 'page', 'change title')
-	.allow('admin', 'page', 'change title')
-	.allow('admin', 'book');
-
-//console.log('---built permissions---');
-//console.log('---visitor---');
-//console.log(acl.getPermissions('visitor'));
-//console.log('---user---');
-//console.log(acl.getPermissions('user'));
-//console.log('---admin---');
-//console.log(acl.getPermissions('admin'));
-
-//console.log('---anonymous permissions check---');
-acl.isAllowed(anonymous, page1).then(
-	() => {
-		// anonymous should not be allowed
-		console.error('This should not be printed in console');
-	},
-	() => {
-		// anonymous is not allowed
-		console.log('anonymous isAllowed page1:* -> false');
-	}
+acl.isAllowed(anonymousUser, page1Resource, 'read').then(
+  () => console.log('anonymousUser is allowed to read page1Resource'),
+  () => console.log('anonymousUser has been denied to read page1Resource'),
 );
 
-acl.isAllowed(anonymous, page1, 'read').then(
-	// anonymous is allowed
-	() => {console.log('anonymous isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
+acl.isAllowed(anonymousUser, page1Resource, 'write').then(
+  () => console.log('anonymousUser is allowed to write page1Resource'),
+  () => console.log('anonymousUser has been denied to write page1Resource'),
 );
 
-acl.isAllowed(anonymous, page1, 'mark').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed page1:mark -> false')}
+acl.isAllowed(loggedUser, page1Resource, 'read').then(
+  () => console.log('loggedUser is allowed to read page1Resource'),
+  () => console.log('loggedUser has been denied to read page1Resource'),
 );
 
-acl.isAllowed(anonymous, page1, 'change title').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed page1:change title -> false')}
+acl.isAllowed(loggedUser, page1Resource, 'write').then(
+  () => console.log('loggedUser is allowed to write page1Resource'),
+  () => console.log('loggedUser has been denied to write page1Resource'),
 );
 
-acl.isAllowed(anonymous, book).then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed book:* -> false')}
+acl.isAllowed(loggedUser, page1Resource, 'update').then(
+  () => console.log('loggedUser is allowed to update page1Resource'),
+  () => console.log('loggedUser has been denied to update page1Resource'),
+);
+acl.isAllowed(loggedUser, page2Resource, 'update').then(
+  () => console.log('loggedUser is allowed to update page2Resource'),
+  () => console.log('loggedUser has been denied to update pag2Resource'),
+);
+acl.isAllowed(loggedUser, page1Resource, 'delete').then(
+  () => console.log('loggedUser is allowed to delete page1Resource'),
+  () => console.log('loggedUser has been denied to delete pag1Resource'),
+);
+acl.isAllowed(adminUser, page1Resource, 'delete').then(
+  () => console.log('adminUser is allowed to delete page1Resource'),
+  () => console.log('adminUser has been denied to delete pag1Resource'),
 );
 
-acl.isAllowed(anonymous, book, 'sell').then(
-	() => {console.error('This should not be printed in console')},
-	// anonymous is not allowed
-	() => {console.log('anonymous isAllowed book:sell -> false')}
+acl.isAllowed(adminUser, bookResource, 'newPermission').then(
+  () => console.log('adminUser is allowed to do anything to bookResource'),
+  () => console.log('adminUser has been denied inexistante privilege on bookResource'),
 );
-
-
-//console.log('---user permissions check---');
-acl.isAllowed(bob, page1).then(
-	() => {console.log('bob isAllowed page1:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-
-acl.isAllowed(bob, page1, 'read').then(
-	() => {console.log('bob isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-
-acl.isAllowed(bob, page1, 'mark').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed page1:mark -> false')}
-);
-
-acl.isAllowed(bob, page1, 'change title').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed page1:change title -> false')}
-);
-
-acl.isAllowed(bob, book, 'book:*').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed book:* -> false')}
-);
-
-acl.isAllowed(bob, book, 'book:sell').then(
-	() => {console.error('This should not be printed in console')},
-	() => {console.log('bob isAllowed book:sell -> false')}//privilege was not declared previously -> inherit from book:*
-);
-
-//console.log('---admin permissions check---');
-acl.isAllowed(me, page1).then(
-	() => {console.log('me isAllowed page1:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'read').then(
-	() => {console.log('me isAllowed page1:read -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'mark').then(
-	() => {console.log('me isAllowed page1:mark -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, page1, 'change title').then(
-	() => {console.log('me isAllowed page1:change title -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, book).then(
-	() => {console.log('me isAllowed book:* -> true')},
-	() => {console.error('This should not be printed in console')}
-);
-acl.isAllowed(me, book, 'sell').then(
-	() => {console.log('me isAllowed book:sell -> true')},//privilege was not declared previously -> inherit from book:*
-	() => {console.error('This should not be printed in console')}
-);
-

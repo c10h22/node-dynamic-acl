@@ -80,6 +80,16 @@ class Acl {
   }
 
   /**
+   * Runs fetchRoleIdFunc function and returns role Id.
+   *
+   * @param user User which Acl should retrieve Id
+   * @return {Promise}
+   */
+  getRoleId(user) {
+    return this._getRoleIdFunc(user);
+  }
+
+  /**
    * Sets how Acl should retrieve Resource Id
    *
    * @param {fetchResourceIdFunc} func - that will let Acl fetch Resource Id
@@ -92,6 +102,16 @@ class Acl {
     }
     this._getResourceIdFunc = func;
     return this;
+  }
+
+  /**
+   * Runs fetchResourceIdFunc function and returns resource Id.
+   *
+   * @param resource Resource which Acl should retrieve Id
+   * @return {Promise}
+   */
+  getResourceId(resource) {
+    return this._getResourceIdFunc(resource);
   }
 
   /**
@@ -395,7 +415,6 @@ class Acl {
    * @returns {Promise}
    */
   isAllowed(user, resource, privilege = '*') {
-
     return Promise.all([this._getRoleIdFunc(user), this._getResourceIdFunc(resource)]).then(
       (result) => {
         const [roleId, resourceId] = result;

@@ -62,12 +62,12 @@ describe('Acl', () => {
 			fakeAcl.addResource(new Resource('row2'));
 			fakeAcl.build();
 			let permissions = fakeAcl.permissions;
-			permissions.should.have.keys(['anonyme', 'user']);
+			permissions.should.have.properties(['anonyme', 'user']);
 
 			for (let roleId of Object.keys(permissions)) {
-				permissions[roleId].should.have.keys(['row1', 'row2']);
-				permissions[roleId]['row1'].should.have.keys(['*', 'get', 'post']);
-				permissions[roleId]['row2'].should.have.keys(['*']);
+				permissions[roleId].should.have.properties(['row1', 'row2']);
+				permissions[roleId]['row1'].should.have.properties(['*', 'get', 'post']);
+				permissions[roleId]['row2'].should.have.properties(['*']);
 				for (let resourceId of Object.keys(permissions[roleId])) {
 					for (let privilege of Object.keys(permissions[roleId][resourceId])) {
 						permissions[roleId][resourceId][privilege].should.be.eql({allowed: null, condition: null});
